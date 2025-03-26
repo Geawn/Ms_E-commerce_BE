@@ -1,0 +1,75 @@
+type Product {
+  id: ID!
+  name: String!
+  slug: String!
+  description: String
+  seoTitle: String
+  seoDescription: String
+  thumbnail: Image
+  category: Category
+  variants: [Variant!]!
+  pricing: ProductPricing!
+}
+
+type Image {
+  url: String!
+  alt: String
+}
+
+type Category {
+  id: ID!
+  name: String!
+  slug: String!
+}
+
+type Variant {
+  id: ID!
+  name: String!
+  sku: String!
+  price: Money!
+  attributes: [VariantAttribute!]!
+}
+
+type VariantAttribute {
+  id: ID!
+  name: String!
+  value: String!
+}
+
+type Money {
+  amount: Float!
+  currency: String!
+}
+
+type PriceRange {
+  start: Money!
+  stop: Money!
+}
+
+type ProductPricing {
+  priceRange: PriceRange!
+}
+
+type ProductEdge {
+  node: Product!
+  cursor: String!
+}
+
+type ProductConnection {
+  edges: [ProductEdge!]!
+  pageInfo: PageInfo!
+}
+
+type PageInfo {
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: String
+  endCursor: String
+}
+
+type Query {
+  product(slug: String!, channel: String!): Product
+  products(first: Int, after: String): ProductConnection!
+  productsByCategory(categorySlug: String!, first: Int, after: String): ProductConnection!
+  searchProducts(query: String!, first: Int, after: String): ProductConnection!
+} 
