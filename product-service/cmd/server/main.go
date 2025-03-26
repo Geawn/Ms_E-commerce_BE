@@ -19,6 +19,7 @@ import (
 
 	"github.com/Geawn/Ms_E-commerce_BE/product-service/internal/config"
 	"github.com/Geawn/Ms_E-commerce_BE/product-service/internal/database"
+	"github.com/Geawn/Ms_E-commerce_BE/product-service/internal/database/migration"
 	"github.com/Geawn/Ms_E-commerce_BE/product-service/internal/event"
 	"github.com/Geawn/Ms_E-commerce_BE/product-service/internal/graphql"
 	"github.com/Geawn/Ms_E-commerce_BE/product-service/internal/repository"
@@ -47,7 +48,7 @@ func main() {
 	defer sqlDB.Close()
 
 	// Run migrations
-	if err := database.RunMigrations(db); err != nil {
+	if err := migration.RunMigrations(db); err != nil {
 		log.Fatalf("Failed to run migrations: %v", err)
 	}
 
@@ -103,15 +104,14 @@ func main() {
 	pb.RegisterProductServiceServer(grpcServer, grpcService)
 	reflection.Register(grpcServer)
 
-	// Start gRPC server
-	grpcListener, err := net.Listen("tcp", fmt.Sprintf(":%d", cfg.GRPCPort))
+	grpcListener, err := net.Listen("tcp", fmt.Sprintf(":%s", cfg.GRPCPort))
 	if err != nil {
 		log.Fatalf("Failed to listen: %v", err)
 	}
 
 	// Start HTTP server
 	httpServer := &http.Server{
-		Addr:    fmt.Sprintf(":%d", cfg.HTTPPort),
+		Addr:    fmt.Sprintf(":%s", cfg.HTTPPort),
 		Handler: router,
 	}
 
@@ -128,13 +128,13 @@ func main() {
 
 	// Start servers
 	go func() {
-		log.Printf("Starting gRPC server on :%d", cfg.GRPCPort)
+		log.Printf("Starting gRPC server on :%s", cfg.GRPCPort)
 		if err := grpcServer.Serve(grpcListener); err != nil {
 			log.Fatalf("Failed to serve gRPC: %v", err)
 		}
 	}()
 
-	log.Printf("Starting HTTP server on :%d", cfg.HTTPPort)
+	log.Printf("Starting HTTP server on :%s", cfg.HTTPPort)
 	if err := httpServer.ListenAndServe(); err != http.ErrServerClosed {
 		log.Fatalf("Failed to serve HTTP: %v", err)
 	}

@@ -10,6 +10,7 @@ import (
 	"gorm.io/gorm"
 )
 
+// Kết nối database và chạy migration
 func ConnectDB(cfg *config.Config) (*gorm.DB, error) {
 	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 		cfg.DBHost, cfg.DBPort, cfg.DBUser, cfg.DBPassword, cfg.DBName)
@@ -19,7 +20,7 @@ func ConnectDB(cfg *config.Config) (*gorm.DB, error) {
 		return nil, fmt.Errorf("failed to connect to database: %v", err)
 	}
 
-	// Chạy migration từ file migration.go
+	// Chạy migration từ thư mục database/migration
 	log.Println("Running database migrations...")
 	if err := migration.RunMigrations(db); err != nil {
 		return nil, fmt.Errorf("failed to run migrations: %v", err)
