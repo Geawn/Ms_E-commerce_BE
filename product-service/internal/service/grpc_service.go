@@ -3,8 +3,8 @@ package service
 import (
 	"context"
 
-	"github.com/yourusername/product-service/internal/models"
-	pb "github.com/yourusername/product-service/proto"
+	"github.com/Geawn/Ms_E-commerce_BE/product-service/internal/models"
+	pb "github.com/Geawn/Ms_E-commerce_BE/product-service/proto"
 	"gorm.io/gorm"
 )
 
@@ -13,12 +13,17 @@ type GRPCProductService struct {
 	ProductService *ProductService
 }
 
+func NewGRPCProductService(productService *ProductService) *GRPCProductService {
+	return &GRPCProductService{
+		ProductService: productService,
+	}
+}
+
 func (s *GRPCProductService) GetProduct(ctx context.Context, req *pb.GetProductRequest) (*pb.Product, error) {
 	product, err := s.ProductService.GetProductBySlug(ctx, req.Slug)
 	if err != nil {
 		return nil, err
 	}
-
 	return convertToProtoProduct(product), nil
 }
 
@@ -96,8 +101,12 @@ func (s *GRPCProductService) DeleteProduct(ctx context.Context, req *pb.DeletePr
 		return nil, err
 	}
 
-	return &pb.DeleteProductResponse{Success: true}, nil
+	return &pb.DeleteProductResponse{
+		Success: true,
+	}, nil
 }
+
+func (s *GRPCProductService) mustEmbedUnimplementedProductServiceServer() {}
 
 func convertToProtoProduct(product *models.Product) *pb.Product {
 	protoProduct := &pb.Product{

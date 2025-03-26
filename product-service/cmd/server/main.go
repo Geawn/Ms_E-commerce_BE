@@ -16,17 +16,14 @@ import (
 	"github.com/go-redis/redis/v8"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
 
-	"github.com/yourusername/product-service/internal/config"
-	"github.com/yourusername/product-service/internal/database"
-	"github.com/yourusername/product-service/internal/event"
-	"github.com/yourusername/product-service/internal/graphql"
-	"github.com/yourusername/product-service/internal/models"
-	"github.com/yourusername/product-service/internal/repository"
-	"github.com/yourusername/product-service/internal/service"
-	pb "github.com/yourusername/product-service/proto"
+	"github.com/Geawn/Ms_E-commerce_BE/product-service/internal/config"
+	"github.com/Geawn/Ms_E-commerce_BE/product-service/internal/database"
+	"github.com/Geawn/Ms_E-commerce_BE/product-service/internal/event"
+	"github.com/Geawn/Ms_E-commerce_BE/product-service/internal/graphql"
+	"github.com/Geawn/Ms_E-commerce_BE/product-service/internal/repository"
+	"github.com/Geawn/Ms_E-commerce_BE/product-service/internal/service"
+	pb "github.com/Geawn/Ms_E-commerce_BE/product-service/proto"
 )
 
 func main() {
@@ -41,7 +38,13 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
-	defer db.Close()
+
+	// Get the underlying sql.DB and defer its closing
+	sqlDB, err := db.DB()
+	if err != nil {
+		log.Fatalf("Failed to get sql.DB: %v", err)
+	}
+	defer sqlDB.Close()
 
 	// Run migrations
 	if err := database.RunMigrations(db); err != nil {
@@ -72,7 +75,7 @@ func main() {
 	defer rabbitmq.Close()
 
 	// Initialize repositories
-	productRepo := repository.NewProductRepository(db, rdb)
+	productRepo := repository.NewProductRepository(db)
 
 	// Initialize services
 	productService := service.NewProductService(productRepo)

@@ -8,42 +8,42 @@ import (
 
 type Product struct {
 	gorm.Model
-	Name        string  `json:"name" gorm:"not null"`
-	Slug        string  `json:"slug" gorm:"uniqueIndex;not null"`
-	Description string  `json:"description"`
-	Price       float64 `json:"price" gorm:"not null"`
-	Stock       int     `json:"stock" gorm:"not null"`
-	CategoryID  uint    `json:"category_id" gorm:"not null"`
-	Category    Category `json:"category" gorm:"foreignKey:CategoryID"`
-	Variants    []ProductVariant `json:"variants" gorm:"foreignKey:ProductID"`
+	Name        string   `gorm:"not null"`
+	Slug        string   `gorm:"uniqueIndex;not null"`
+	Description string   `gorm:"type:text"`
+	Price       float64  `gorm:"not null"`
+	Stock       int      `gorm:"not null"`
+	CategoryID  uint     `gorm:"not null"`
+	Category    Category `gorm:"foreignKey:CategoryID"`
+	Variants    []ProductVariant
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 }
 
 type Category struct {
 	gorm.Model
-	Name        string    `json:"name" gorm:"not null"`
-	Slug        string    `json:"slug" gorm:"uniqueIndex;not null"`
-	Description string    `json:"description"`
+	Name        string    `gorm:"not null"`
+	Slug        string    `gorm:"uniqueIndex;not null"`
+	Description string    `gorm:"type:text"`
 	Products    []Product `json:"products" gorm:"foreignKey:CategoryID"`
 }
 
 type ProductVariant struct {
 	gorm.Model
-	ProductID   uint      `json:"product_id" gorm:"not null"`
-	Product     Product   `json:"product" gorm:"foreignKey:ProductID"`
-	Name        string    `json:"name" gorm:"not null"`
-	Price       float64   `json:"price" gorm:"not null"`
-	Stock       int       `json:"stock" gorm:"not null"`
-	Attributes  []VariantAttribute `json:"attributes" gorm:"foreignKey:VariantID"`
+	ProductID  uint               `gorm:"not null"`
+	Product    Product            `gorm:"foreignKey:ProductID"`
+	Name       string             `gorm:"not null"`
+	Price      float64            `gorm:"not null"`
+	Stock      int                `gorm:"not null"`
+	Attributes []VariantAttribute `json:"attributes" gorm:"foreignKey:VariantID"`
 }
 
 type VariantAttribute struct {
 	gorm.Model
-	VariantID   uint   `json:"variant_id" gorm:"not null"`
-	Variant     ProductVariant `json:"variant" gorm:"foreignKey:VariantID"`
-	Name        string `json:"name" gorm:"not null"`
-	Value       string `json:"value" gorm:"not null"`
+	VariantID uint           `gorm:"not null"`
+	Variant   ProductVariant `gorm:"foreignKey:VariantID"`
+	Name      string         `gorm:"not null"`
+	Value     string         `gorm:"not null"`
 }
 
 type Price struct {

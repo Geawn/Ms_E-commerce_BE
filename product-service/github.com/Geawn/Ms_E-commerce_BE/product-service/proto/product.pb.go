@@ -30,10 +30,10 @@ type Product struct {
 	Price         float64                `protobuf:"fixed64,5,opt,name=price,proto3" json:"price,omitempty"`
 	Stock         int32                  `protobuf:"varint,6,opt,name=stock,proto3" json:"stock,omitempty"`
 	CategoryId    uint32                 `protobuf:"varint,7,opt,name=category_id,json=categoryId,proto3" json:"category_id,omitempty"`
-	CreatedAt     string                 `protobuf:"bytes,8,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	UpdatedAt     string                 `protobuf:"bytes,9,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
-	Category      *Category              `protobuf:"bytes,10,opt,name=category,proto3" json:"category,omitempty"`
-	Variants      []*Variant             `protobuf:"bytes,11,rep,name=variants,proto3" json:"variants,omitempty"`
+	Category      *Category              `protobuf:"bytes,8,opt,name=category,proto3" json:"category,omitempty"`
+	Variants      []*Variant             `protobuf:"bytes,9,rep,name=variants,proto3" json:"variants,omitempty"`
+	CreatedAt     string                 `protobuf:"bytes,10,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	UpdatedAt     string                 `protobuf:"bytes,11,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -117,20 +117,6 @@ func (x *Product) GetCategoryId() uint32 {
 	return 0
 }
 
-func (x *Product) GetCreatedAt() string {
-	if x != nil {
-		return x.CreatedAt
-	}
-	return ""
-}
-
-func (x *Product) GetUpdatedAt() string {
-	if x != nil {
-		return x.UpdatedAt
-	}
-	return ""
-}
-
 func (x *Product) GetCategory() *Category {
 	if x != nil {
 		return x.Category
@@ -143,6 +129,20 @@ func (x *Product) GetVariants() []*Variant {
 		return x.Variants
 	}
 	return nil
+}
+
+func (x *Product) GetCreatedAt() string {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return ""
+}
+
+func (x *Product) GetUpdatedAt() string {
+	if x != nil {
+		return x.UpdatedAt
+	}
+	return ""
 }
 
 type Category struct {
@@ -766,14 +766,14 @@ const file_proto_product_proto_rawDesc = "" +
 	"\x05price\x18\x05 \x01(\x01R\x05price\x12\x14\n" +
 	"\x05stock\x18\x06 \x01(\x05R\x05stock\x12\x1f\n" +
 	"\vcategory_id\x18\a \x01(\rR\n" +
-	"categoryId\x12\x1d\n" +
+	"categoryId\x12-\n" +
+	"\bcategory\x18\b \x01(\v2\x11.product.CategoryR\bcategory\x12,\n" +
+	"\bvariants\x18\t \x03(\v2\x10.product.VariantR\bvariants\x12\x1d\n" +
 	"\n" +
-	"created_at\x18\b \x01(\tR\tcreatedAt\x12\x1d\n" +
+	"created_at\x18\n" +
+	" \x01(\tR\tcreatedAt\x12\x1d\n" +
 	"\n" +
-	"updated_at\x18\t \x01(\tR\tupdatedAt\x12-\n" +
-	"\bcategory\x18\n" +
-	" \x01(\v2\x11.product.CategoryR\bcategory\x12,\n" +
-	"\bvariants\x18\v \x03(\v2\x10.product.VariantR\bvariants\"d\n" +
+	"updated_at\x18\v \x01(\tR\tupdatedAt\"d\n" +
 	"\bCategory\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\rR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x12\n" +

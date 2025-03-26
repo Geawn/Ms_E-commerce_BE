@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package product;
 
-option go_package = "github.com/yourusername/product-service/proto";
+option go_package = "github.com/Geawn/Ms_E-commerce_BE/product-service/proto";
 
 service ProductService {
   rpc GetProduct(GetProductRequest) returns (Product) {}
@@ -21,10 +21,10 @@ message Product {
   double price = 5;
   int32 stock = 6;
   uint32 category_id = 7;
-  Category category = 8;
-  repeated Variant variants = 9;
-  string created_at = 10;
-  string updated_at = 11;
+  string created_at = 8;
+  string updated_at = 9;
+  Category category = 10;
+  repeated Variant variants = 11;
 }
 
 message Category {

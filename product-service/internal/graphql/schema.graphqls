@@ -1,0 +1,38 @@
+type Product {
+  id: ID!
+  name: String!
+  slug: String!
+  description: String
+  price: Float!
+  stock: Int!
+  category: Category!
+  variants: [ProductVariant!]!
+}
+
+type Category {
+  id: ID!
+  name: String!
+  slug: String!
+  description: String
+}
+
+type ProductVariant {
+  id: ID!
+  name: String!
+  price: Float!
+  stock: Int!
+  attributes: [VariantAttribute!]!
+}
+
+type VariantAttribute {
+  id: ID!
+  name: String!
+  value: String!
+}
+
+type Query {
+  product(slug: String!): Product
+  products(limit: Int, offset: Int): [Product!]!
+  productsByCategory(categoryID: ID!, limit: Int, offset: Int): [Product!]!
+  searchProducts(query: String!, limit: Int, offset: Int): [Product!]!
+} 

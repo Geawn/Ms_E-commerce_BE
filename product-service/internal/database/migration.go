@@ -3,7 +3,7 @@ package database
 import (
 	"log"
 
-	"github.com/yourusername/product-service/internal/models"
+	"github.com/Geawn/Ms_E-commerce_BE/product-service/internal/models"
 	"gorm.io/gorm"
 )
 

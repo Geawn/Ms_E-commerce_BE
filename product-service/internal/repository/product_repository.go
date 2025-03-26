@@ -3,16 +3,14 @@ package repository
 import (
 	"context"
 
-	"github.com/go-redis/redis/v8"
+	"github.com/Geawn/Ms_E-commerce_BE/product-service/internal/models"
 	"gorm.io/gorm"
-
-	"github.com/yourusername/product-service/internal/models"
 )
 
 type ProductRepository interface {
 	GetBySlug(ctx context.Context, slug string) (*models.Product, error)
 	List(ctx context.Context, limit, offset int) ([]models.Product, error)
-	ListByCategory(ctx context.Context, categorySlug string, limit, offset int) ([]models.Product, error)
+	ListByCategory(ctx context.Context, categoryID uint, limit, offset int) ([]models.Product, error)
 	Search(ctx context.Context, query string, limit, offset int) ([]models.Product, error)
 	Create(ctx context.Context, product *models.Product) error
 	Update(ctx context.Context, product *models.Product) error
@@ -20,67 +18,69 @@ type ProductRepository interface {
 }
 
 type productRepository struct {
-	db    *gorm.DB
-	redis *redis.Client
+	db *gorm.DB
 }
 
-func NewProductRepository(db *gorm.DB, redisClient *redis.Client) ProductRepository {
+func NewProductRepository(db *gorm.DB) ProductRepository {
 	return &productRepository{
-		db:    db,
-		redis: redisClient,
+		db: db,
 	}
 }
 
 func (r *productRepository) GetBySlug(ctx context.Context, slug string) (*models.Product, error) {
 	var product models.Product
-
-	// Try to get from cache first
-	cacheKey := "product:" + slug
-	if _, err := r.redis.Get(ctx, cacheKey).Result(); err == nil {
-		// TODO: Unmarshal cached data
-	}
-
-	// If not in cache, get from database
-	if err := r.db.WithContext(ctx).Where("slug = ?", slug).First(&product).Error; err != nil {
+	err := r.db.WithContext(ctx).
+		Preload("Category").
+		Preload("Variants").
+		Where("slug = ?", slug).
+		First(&product).Error
+	if err != nil {
 		return nil, err
 	}
-
-	// Cache the result
-	// TODO: Marshal and cache product data
-
 	return &product, nil
 }
 
 func (r *productRepository) List(ctx context.Context, limit, offset int) ([]models.Product, error) {
 	var products []models.Product
-
-	if err := r.db.WithContext(ctx).Limit(limit).Offset(offset).Find(&products).Error; err != nil {
+	err := r.db.WithContext(ctx).
+		Preload("Category").
+		Preload("Variants").
+		Limit(limit).
+		Offset(offset).
+		Find(&products).Error
+	if err != nil {
 		return nil, err
 	}
-
 	return products, nil
 }
 
-func (r *productRepository) ListByCategory(ctx context.Context, categorySlug string, limit, offset int) ([]models.Product, error) {
+func (r *productRepository) ListByCategory(ctx context.Context, categoryID uint, limit, offset int) ([]models.Product, error) {
 	var products []models.Product
-
-	if err := r.db.WithContext(ctx).Joins("JOIN categories ON products.category_id = categories.id").
-		Where("categories.slug = ?", categorySlug).
-		Limit(limit).Offset(offset).Find(&products).Error; err != nil {
+	err := r.db.WithContext(ctx).
+		Preload("Category").
+		Preload("Variants").
+		Where("category_id = ?", categoryID).
+		Limit(limit).
+		Offset(offset).
+		Find(&products).Error
+	if err != nil {
 		return nil, err
 	}
-
 	return products, nil
 }
 
 func (r *productRepository) Search(ctx context.Context, query string, limit, offset int) ([]models.Product, error) {
 	var products []models.Product
-
-	if err := r.db.WithContext(ctx).Where("name ILIKE ? OR description ILIKE ?", "%"+query+"%", "%"+query+"%").
-		Limit(limit).Offset(offset).Find(&products).Error; err != nil {
+	err := r.db.WithContext(ctx).
+		Preload("Category").
+		Preload("Variants").
+		Where("name ILIKE ? OR description ILIKE ?", "%"+query+"%", "%"+query+"%").
+		Limit(limit).
+		Offset(offset).
+		Find(&products).Error
+	if err != nil {
 		return nil, err
 	}
-
 	return products, nil
 }
 
