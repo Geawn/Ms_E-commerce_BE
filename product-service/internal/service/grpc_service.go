@@ -35,7 +35,7 @@ func (s *GRPCProductService) ListProducts(ctx context.Context, req *pb.ListProdu
 
 	protoProducts := make([]*pb.Product, len(products))
 	for i, product := range products {
-		protoProducts[i] = convertToProtoProduct(&product)
+		protoProducts[i] = convertToProtoProduct(product)
 	}
 
 	return &pb.ListProductsResponse{
@@ -52,7 +52,7 @@ func (s *GRPCProductService) SearchProducts(ctx context.Context, req *pb.SearchP
 
 	protoProducts := make([]*pb.Product, len(products))
 	for i, product := range products {
-		protoProducts[i] = convertToProtoProduct(&product)
+		protoProducts[i] = convertToProtoProduct(product)
 	}
 
 	return &pb.ListProductsResponse{
@@ -66,9 +66,12 @@ func (s *GRPCProductService) CreateProduct(ctx context.Context, req *pb.CreatePr
 		Name:        req.Name,
 		Slug:        req.Slug,
 		Description: req.Description,
-		Price:       req.Price,
-		Stock:       int(req.Stock),
 		CategoryID:  uint(req.CategoryId),
+		Rating:      req.Rating,
+		Thumbnail: &models.Image{
+			URL: req.ThumbnailUrl,
+			Alt: req.ThumbnailAlt,
+		},
 	}
 
 	if err := s.ProductService.CreateProduct(ctx, product); err != nil {
@@ -84,9 +87,12 @@ func (s *GRPCProductService) UpdateProduct(ctx context.Context, req *pb.UpdatePr
 		Name:        req.Name,
 		Slug:        req.Slug,
 		Description: req.Description,
-		Price:       req.Price,
-		Stock:       int(req.Stock),
 		CategoryID:  uint(req.CategoryId),
+		Rating:      req.Rating,
+		Thumbnail: &models.Image{
+			URL: req.ThumbnailUrl,
+			Alt: req.ThumbnailAlt,
+		},
 	}
 
 	if err := s.ProductService.UpdateProduct(ctx, product); err != nil {
@@ -110,18 +116,19 @@ func (s *GRPCProductService) mustEmbedUnimplementedProductServiceServer() {}
 
 func convertToProtoProduct(product *models.Product) *pb.Product {
 	protoProduct := &pb.Product{
-		Id:          uint32(product.ID),
-		Name:        product.Name,
-		Slug:        product.Slug,
-		Description: product.Description,
-		Price:       product.Price,
-		Stock:       int32(product.Stock),
-		CategoryId:  uint32(product.CategoryID),
-		CreatedAt:   product.CreatedAt.String(),
-		UpdatedAt:   product.UpdatedAt.String(),
+		Id:           uint32(product.ID),
+		Name:         product.Name,
+		Slug:         product.Slug,
+		Description:  product.Description,
+		CategoryId:   uint32(product.CategoryID),
+		Rating:       product.Rating,
+		ThumbnailUrl: product.Thumbnail.URL,
+		ThumbnailAlt: product.Thumbnail.Alt,
+		CreatedAt:    product.CreatedAt.String(),
+		UpdatedAt:    product.UpdatedAt.String(),
 	}
 
-	if product.Category.ID != 0 {
+	if product.Category != nil && product.Category.ID != 0 {
 		protoProduct.Category = &pb.Category{
 			Id:          uint32(product.Category.ID),
 			Name:        product.Category.Name,
@@ -135,8 +142,51 @@ func convertToProtoProduct(product *models.Product) *pb.Product {
 		protoProduct.Variants[i] = &pb.Variant{
 			Id:    uint32(variant.ID),
 			Name:  variant.Name,
-			Price: variant.Price,
 			Stock: int32(variant.Stock),
+			Price: variant.Pricing.PriceRange.Start.Amount,
+		}
+
+		protoProduct.Variants[i].Attributes = make([]*pb.VariantAttribute, len(variant.Attributes))
+		for j, attr := range variant.Attributes {
+			protoProduct.Variants[i].Attributes[j] = &pb.VariantAttribute{
+				Id:    uint32(attr.ID),
+				Name:  attr.Name,
+				Value: attr.Value,
+			}
+		}
+	}
+
+	protoProduct.Attributes = make([]*pb.Attribute, len(product.Attributes))
+	for i, attr := range product.Attributes {
+		protoProduct.Attributes[i] = &pb.Attribute{
+			Id:     uint32(attr.ID),
+			Name:   attr.Name,
+			Values: attr.Values,
+		}
+	}
+
+	protoProduct.Collections = make([]*pb.Collection, len(product.Collections))
+	for i, collection := range product.Collections {
+		protoProduct.Collections[i] = &pb.Collection{
+			Id:          uint32(collection.ID),
+			Name:        collection.Name,
+			Slug:        collection.Slug,
+			Description: collection.Description,
+		}
+	}
+
+	protoProduct.Reviews = make([]*pb.Review, len(product.Reviews))
+	for i, review := range product.Reviews {
+		protoProduct.Reviews[i] = &pb.Review{
+			Id:        uint32(review.ID),
+			Rating:    review.Rating,
+			Comment:   review.Comment,
+			CreatedAt: review.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+			User: &pb.User{
+				Id:    uint32(review.User.ID),
+				Name:  review.User.Name,
+				Email: review.User.Email,
+			},
 		}
 	}
 

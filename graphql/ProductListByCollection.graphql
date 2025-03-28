@@ -7,7 +7,33 @@ query ProductListByCollection($slug: String!, $channel: String!) {
 		products(first: 100) {
 			edges {
 				node {
-					...ProductListItem
+					id
+					name
+					slug
+					pricing {
+						priceRange {
+							start {
+								gross {
+									amount
+									currency
+								}
+							}
+							stop {
+								gross {
+									amount
+									currency
+								}
+							}
+						}
+					}
+					category {
+						id
+						name
+					}
+					thumbnail(size: 1024, format: WEBP) {
+						url
+						alt
+					}
 				}
 			}
 		}

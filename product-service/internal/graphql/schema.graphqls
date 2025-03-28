@@ -3,10 +3,39 @@ type Product {
   name: String!
   slug: String!
   description: String
-  price: Float!
-  stock: Int!
   category: Category!
+  pricing: ProductPricing!
+  thumbnail: Image
   variants: [ProductVariant!]!
+  attributes: [ProductAttribute!]!
+  collections: [Collection!]!
+  rating: Float
+  reviews: [Review!]!
+}
+
+type ProductPricing {
+  priceRange: PriceRange!
+}
+
+type PriceRange {
+  start: Price!
+  stop: Price!
+}
+
+type Price {
+  gross: Money!
+}
+
+type Money {
+  amount: Float!
+  currency: String!
+}
+
+type Image {
+  url: String!
+  alt: String
+  size: Int
+  format: String
 }
 
 type Category {
@@ -14,14 +43,23 @@ type Category {
   name: String!
   slug: String!
   description: String
+  products: [Product!]!
+}
+
+type Collection {
+  id: ID!
+  name: String!
+  slug: String!
+  description: String
+  products: [Product!]!
 }
 
 type ProductVariant {
   id: ID!
   name: String!
-  price: Float!
-  stock: Int!
+  pricing: ProductPricing!
   attributes: [VariantAttribute!]!
+  stock: Int!
 }
 
 type VariantAttribute {
@@ -30,9 +68,47 @@ type VariantAttribute {
   value: String!
 }
 
+type ProductAttribute {
+  id: ID!
+  name: String!
+  values: [String!]!
+}
+
+type Review {
+  id: ID!
+  rating: Float!
+  comment: String
+  user: User!
+  createdAt: String!
+}
+
+type User {
+  id: ID!
+  name: String!
+  email: String!
+}
+
 type Query {
-  product(slug: String!): Product
-  products(limit: Int, offset: Int): [Product!]!
-  productsByCategory(categoryID: ID!, limit: Int, offset: Int): [Product!]!
-  searchProducts(query: String!, limit: Int, offset: Int): [Product!]!
+  product(slug: String!, channel: String!): Product
+  products(first: Int, channel: String!): ProductConnection!
+  productsByCategory(categoryID: ID!, first: Int, channel: String!): ProductConnection!
+  productsByCollection(collectionID: ID!, first: Int, channel: String!): ProductConnection!
+  searchProducts(query: String!, first: Int, channel: String!): ProductConnection!
+}
+
+type ProductConnection {
+  edges: [ProductEdge!]!
+  pageInfo: PageInfo!
+}
+
+type ProductEdge {
+  node: Product!
+  cursor: String!
+}
+
+type PageInfo {
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: String
+  endCursor: String
 } 

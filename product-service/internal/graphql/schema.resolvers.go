@@ -7,20 +7,11 @@ package graphql
 import (
 	"context"
 	"fmt"
+	"strings"
 
+	"github.com/Geawn/Ms_E-commerce_BE/product-service/internal/graphql/model"
 	"github.com/Geawn/Ms_E-commerce_BE/product-service/internal/models"
-	"github.com/Geawn/Ms_E-commerce_BE/product-service/internal/service"
 )
-
-type Resolver struct {
-	productService *service.ProductService
-}
-
-func NewResolver(productService *service.ProductService) *Resolver {
-	return &Resolver{
-		productService: productService,
-	}
-}
 
 // ID is the resolver for the id field.
 func (r *categoryResolver) ID(ctx context.Context, obj *models.Category) (string, error) {
@@ -28,51 +19,174 @@ func (r *categoryResolver) ID(ctx context.Context, obj *models.Category) (string
 }
 
 // ID is the resolver for the id field.
+func (r *collectionResolver) ID(ctx context.Context, obj *models.Collection) (string, error) {
+	return fmt.Sprintf("%d", obj.ID), nil
+}
+
+// Gross is the resolver for the gross field.
+func (r *priceResolver) Gross(ctx context.Context, obj *models.Price) (*model.Money, error) {
+	return &model.Money{
+		Amount:   obj.Amount,
+		Currency: obj.Currency,
+	}, nil
+}
+
+// ID is the resolver for the id field.
 func (r *productResolver) ID(ctx context.Context, obj *models.Product) (string, error) {
 	return fmt.Sprintf("%d", obj.ID), nil
 }
 
-// Name is the resolver for the name field.
-func (r *productResolver) Name(ctx context.Context, obj *models.Product) (string, error) {
-	return obj.Name, nil
-}
-
-// Slug is the resolver for the slug field.
-func (r *productResolver) Slug(ctx context.Context, obj *models.Product) (string, error) {
-	return obj.Slug, nil
-}
-
-// Description is the resolver for the description field.
-func (r *productResolver) Description(ctx context.Context, obj *models.Product) (*string, error) {
-	return &obj.Description, nil
-}
-
-// Price is the resolver for the price field.
-func (r *productResolver) Price(ctx context.Context, obj *models.Product) (float64, error) {
-	return obj.Price, nil
-}
-
-// Stock is the resolver for the stock field.
-func (r *productResolver) Stock(ctx context.Context, obj *models.Product) (int, error) {
-	return obj.Stock, nil
-}
-
-// Category is the resolver for the category field.
-func (r *productResolver) Category(ctx context.Context, obj *models.Product) (*models.Category, error) {
-	return &obj.Category, nil
-}
-
-// Variants is the resolver for the variants field.
-func (r *productResolver) Variants(ctx context.Context, obj *models.Product) ([]*models.ProductVariant, error) {
-	variants := make([]*models.ProductVariant, len(obj.Variants))
-	for i := range obj.Variants {
-		variants[i] = &obj.Variants[i]
-	}
-	return variants, nil
+// ID is the resolver for the id field.
+func (r *productAttributeResolver) ID(ctx context.Context, obj *models.ProductAttribute) (string, error) {
+	return fmt.Sprintf("%d", obj.ID), nil
 }
 
 // ID is the resolver for the id field.
 func (r *productVariantResolver) ID(ctx context.Context, obj *models.ProductVariant) (string, error) {
+	return fmt.Sprintf("%d", obj.ID), nil
+}
+
+// Product is the resolver for the product field.
+func (r *queryResolver) Product(ctx context.Context, slug string, channel string) (*models.Product, error) {
+	return r.productService.GetProductBySlug(ctx, slug)
+}
+
+// Products is the resolver for the products field.
+func (r *queryResolver) Products(ctx context.Context, first *int, channel string) (*models.ProductConnection, error) {
+	l := 20
+	if first != nil {
+		l = *first
+	}
+
+	products, err := r.productService.ListProducts(ctx, l, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	edges := make([]*models.ProductEdge, len(products))
+	for i, product := range products {
+		edges[i] = &models.ProductEdge{
+			Node:   product,
+			Cursor: fmt.Sprintf("%d", product.ID),
+		}
+	}
+
+	return &models.ProductConnection{
+		Edges: edges,
+		PageInfo: &models.PageInfo{
+			HasNextPage:     len(products) == l,
+			HasPreviousPage: false,
+			StartCursor:     "",
+			EndCursor:       fmt.Sprintf("%d", products[len(products)-1].ID),
+		},
+	}, nil
+}
+
+// ProductsByCategory is the resolver for the productsByCategory field.
+func (r *queryResolver) ProductsByCategory(ctx context.Context, categoryID string, first *int, channel string) (*models.ProductConnection, error) {
+	l := 20
+	if first != nil {
+		l = *first
+	}
+
+	products, err := r.productService.ListByCategory(ctx, categoryID, l, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	edges := make([]*models.ProductEdge, len(products))
+	for i, product := range products {
+		edges[i] = &models.ProductEdge{
+			Node:   product,
+			Cursor: fmt.Sprintf("%d", product.ID),
+		}
+	}
+
+	return &models.ProductConnection{
+		Edges: edges,
+		PageInfo: &models.PageInfo{
+			HasNextPage:     len(products) == l,
+			HasPreviousPage: false,
+			StartCursor:     "",
+			EndCursor:       fmt.Sprintf("%d", products[len(products)-1].ID),
+		},
+	}, nil
+}
+
+// ProductsByCollection is the resolver for the productsByCollection field.
+func (r *queryResolver) ProductsByCollection(ctx context.Context, collectionID string, first *int, channel string) (*models.ProductConnection, error) {
+	l := 20
+	if first != nil {
+		l = *first
+	}
+
+	products, err := r.productService.ListByCollection(ctx, collectionID, l, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	edges := make([]*models.ProductEdge, len(products))
+	for i, product := range products {
+		edges[i] = &models.ProductEdge{
+			Node:   product,
+			Cursor: fmt.Sprintf("%d", product.ID),
+		}
+	}
+
+	return &models.ProductConnection{
+		Edges: edges,
+		PageInfo: &models.PageInfo{
+			HasNextPage:     len(products) == l,
+			HasPreviousPage: false,
+			StartCursor:     "",
+			EndCursor:       fmt.Sprintf("%d", products[len(products)-1].ID),
+		},
+	}, nil
+}
+
+// SearchProducts is the resolver for the searchProducts field.
+func (r *queryResolver) SearchProducts(ctx context.Context, query string, first *int, channel string) (*models.ProductConnection, error) {
+	l := 20
+	if first != nil {
+		l = *first
+	}
+
+	products, err := r.productService.SearchProducts(ctx, query, l, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	edges := make([]*models.ProductEdge, len(products))
+	for i, product := range products {
+		edges[i] = &models.ProductEdge{
+			Node:   product,
+			Cursor: fmt.Sprintf("%d", product.ID),
+		}
+	}
+
+	return &models.ProductConnection{
+		Edges: edges,
+		PageInfo: &models.PageInfo{
+			HasNextPage:     len(products) == l,
+			HasPreviousPage: false,
+			StartCursor:     "",
+			EndCursor:       fmt.Sprintf("%d", products[len(products)-1].ID),
+		},
+	}, nil
+}
+
+// ID is the resolver for the id field.
+func (r *reviewResolver) ID(ctx context.Context, obj *models.Review) (string, error) {
+	return fmt.Sprintf("%d", obj.ID), nil
+}
+
+// CreatedAt is the resolver for the createdAt field.
+func (r *reviewResolver) CreatedAt(ctx context.Context, obj *models.Review) (string, error) {
+	return obj.CreatedAt.Format("2006-01-02T15:04:05Z07:00"), nil
+}
+
+// ID is the resolver for the id field.
+func (r *userResolver) ID(ctx context.Context, obj *models.User) (string, error) {
 	return fmt.Sprintf("%d", obj.ID), nil
 }
 
@@ -81,85 +195,59 @@ func (r *variantAttributeResolver) ID(ctx context.Context, obj *models.VariantAt
 	return fmt.Sprintf("%d", obj.ID), nil
 }
 
-// Product is the resolver for the product field.
-func (r *queryResolver) Product(ctx context.Context, slug string) (*models.Product, error) {
-	return r.productService.GetProductBySlug(ctx, slug)
-}
-
-// Products is the resolver for the products field.
-func (r *queryResolver) Products(ctx context.Context, limit *int, offset *int) ([]*models.Product, error) {
-	l := 10
-	if limit != nil {
-		l = *limit
-	}
-	o := 0
-	if offset != nil {
-		o = *offset
+// Thumbnail is the resolver for the thumbnail field.
+func (r *productResolver) Thumbnail(ctx context.Context, obj *models.Product, size *int, format *string) (*models.Image, error) {
+	if obj.Thumbnail == nil {
+		return nil, nil
 	}
 
-	products, err := r.productService.ListProducts(ctx, l, o)
-	if err != nil {
-		return nil, err
+	// If size or format is provided, create a new image with the specified parameters
+	if size != nil || format != nil {
+		img := &models.Image{
+			URL: obj.Thumbnail.URL,
+			Alt: obj.Thumbnail.Alt,
+		}
+
+		if size != nil {
+			img.Size = *size
+			// Update URL to include size parameter
+			img.URL = fmt.Sprintf("%s?size=%d", img.URL, *size)
+		} else {
+			img.Size = obj.Thumbnail.Size
+		}
+
+		if format != nil {
+			img.Format = *format
+			// Update URL to include format parameter
+			if strings.Contains(img.URL, "?") {
+				img.URL = fmt.Sprintf("%s&format=%s", img.URL, *format)
+			} else {
+				img.URL = fmt.Sprintf("%s?format=%s", img.URL, *format)
+			}
+		} else {
+			img.Format = obj.Thumbnail.Format
+		}
+
+		return img, nil
 	}
 
-	result := make([]*models.Product, len(products))
-	for i := range products {
-		result[i] = &products[i]
-	}
-	return result, nil
-}
-
-// ProductsByCategory is the resolver for the productsByCategory field.
-func (r *queryResolver) ProductsByCategory(ctx context.Context, categoryID string, limit *int, offset *int) ([]*models.Product, error) {
-	l := 10
-	if limit != nil {
-		l = *limit
-	}
-	o := 0
-	if offset != nil {
-		o = *offset
-	}
-
-	products, err := r.productService.ListByCategory(ctx, categoryID, l, o)
-	if err != nil {
-		return nil, err
-	}
-
-	result := make([]*models.Product, len(products))
-	for i := range products {
-		result[i] = &products[i]
-	}
-	return result, nil
-}
-
-// SearchProducts is the resolver for the searchProducts field.
-func (r *queryResolver) SearchProducts(ctx context.Context, query string, limit *int, offset *int) ([]*models.Product, error) {
-	l := 10
-	if limit != nil {
-		l = *limit
-	}
-	o := 0
-	if offset != nil {
-		o = *offset
-	}
-
-	products, err := r.productService.SearchProducts(ctx, query, l, o)
-	if err != nil {
-		return nil, err
-	}
-
-	result := make([]*models.Product, len(products))
-	for i := range products {
-		result[i] = &products[i]
-	}
-	return result, nil
+	return obj.Thumbnail, nil
 }
 
 // Category returns CategoryResolver implementation.
 func (r *Resolver) Category() CategoryResolver { return &categoryResolver{r} }
 
+// Collection returns CollectionResolver implementation.
+func (r *Resolver) Collection() CollectionResolver { return &collectionResolver{r} }
+
+// Price returns PriceResolver implementation.
+func (r *Resolver) Price() PriceResolver { return &priceResolver{r} }
+
 // Product returns ProductResolver implementation.
 func (r *Resolver) Product() ProductResolver { return &productResolver{r} }
+
+// ProductAttribute returns ProductAttributeResolver implementation.
+func (r *Resolver) ProductAttribute() ProductAttributeResolver { return &productAttributeResolver{r} }
 
 // ProductVariant returns ProductVariantResolver implementation.
 func (r *Resolver) ProductVariant() ProductVariantResolver { return &productVariantResolver{r} }
@@ -167,11 +255,22 @@ func (r *Resolver) ProductVariant() ProductVariantResolver { return &productVari
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
+// Review returns ReviewResolver implementation.
+func (r *Resolver) Review() ReviewResolver { return &reviewResolver{r} }
+
+// User returns UserResolver implementation.
+func (r *Resolver) User() UserResolver { return &userResolver{r} }
+
 // VariantAttribute returns VariantAttributeResolver implementation.
 func (r *Resolver) VariantAttribute() VariantAttributeResolver { return &variantAttributeResolver{r} }
 
 type categoryResolver struct{ *Resolver }
+type collectionResolver struct{ *Resolver }
+type priceResolver struct{ *Resolver }
 type productResolver struct{ *Resolver }
+type productAttributeResolver struct{ *Resolver }
 type productVariantResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
+type reviewResolver struct{ *Resolver }
+type userResolver struct{ *Resolver }
 type variantAttributeResolver struct{ *Resolver }

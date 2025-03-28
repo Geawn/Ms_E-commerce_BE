@@ -18,13 +18,17 @@ message Product {
   string name = 2;
   string slug = 3;
   string description = 4;
-  double price = 5;
-  int32 stock = 6;
-  uint32 category_id = 7;
-  string created_at = 8;
-  string updated_at = 9;
-  Category category = 10;
-  repeated Variant variants = 11;
+  uint32 category_id = 5;
+  string created_at = 6;
+  string updated_at = 7;
+  Category category = 8;
+  repeated Variant variants = 9;
+  repeated Attribute attributes = 10;
+  repeated Collection collections = 11;
+  repeated Review reviews = 12;
+  double rating = 13;
+  string thumbnail_url = 14;
+  string thumbnail_alt = 15;
 }
 
 message Category {
@@ -39,6 +43,40 @@ message Variant {
   string name = 2;
   double price = 3;
   int32 stock = 4;
+  repeated VariantAttribute attributes = 5;
+}
+
+message VariantAttribute {
+  uint32 id = 1;
+  string name = 2;
+  string value = 3;
+}
+
+message Attribute {
+  uint32 id = 1;
+  string name = 2;
+  repeated string values = 3;
+}
+
+message Collection {
+  uint32 id = 1;
+  string name = 2;
+  string slug = 3;
+  string description = 4;
+}
+
+message Review {
+  uint32 id = 1;
+  double rating = 2;
+  string comment = 3;
+  string created_at = 4;
+  User user = 5;
+}
+
+message User {
+  uint32 id = 1;
+  string name = 2;
+  string email = 3;
 }
 
 message GetProductRequest {
@@ -65,9 +103,12 @@ message CreateProductRequest {
   string name = 1;
   string slug = 2;
   string description = 3;
-  double price = 4;
-  int32 stock = 5;
-  uint32 category_id = 6;
+  uint32 category_id = 4;
+  double rating = 5;
+  string thumbnail_url = 6;
+  string thumbnail_alt = 7;
+  int32 thumbnail_size = 8;
+  string thumbnail_format = 9;
 }
 
 message UpdateProductRequest {
@@ -75,9 +116,12 @@ message UpdateProductRequest {
   string name = 2;
   string slug = 3;
   string description = 4;
-  double price = 5;
-  int32 stock = 6;
-  uint32 category_id = 7;
+  uint32 category_id = 5;
+  double rating = 6;
+  string thumbnail_url = 7;
+  string thumbnail_alt = 8;
+  int32 thumbnail_size = 9;
+  string thumbnail_format = 10;
 }
 
 message DeleteProductRequest {
