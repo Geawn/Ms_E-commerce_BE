@@ -27,6 +27,7 @@ type ProductRepository interface {
 	UpdateReview(ctx context.Context, review *models.Review) error
 	DeleteReview(ctx context.Context, id uint) error
 	GetProductReviews(ctx context.Context, productID uint) ([]*models.Review, error)
+	GetCategoryBySlug(ctx context.Context, slug string) (*models.Category, error)
 }
 
 type productRepository struct {
@@ -244,4 +245,16 @@ func (r *productRepository) GetProductReviews(ctx context.Context, productID uin
 		result[i] = &reviews[i]
 	}
 	return result, nil
+}
+
+func (r *productRepository) GetCategoryBySlug(ctx context.Context, slug string) (*models.Category, error) {
+	var category models.Category
+	err := r.db.WithContext(ctx).
+		Preload("Products").
+		Where("slug = ?", slug).
+		First(&category).Error
+	if err != nil {
+		return nil, err
+	}
+	return &category, nil
 }

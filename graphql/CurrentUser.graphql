@@ -1,5 +1,12 @@
 query CurrentUser {
-	me {
-		...UserDetails
-	}
+  me {
+    id
+    email
+    firstName
+    lastName
+    avatar {
+      url
+      alt
+    }
+  }
 }

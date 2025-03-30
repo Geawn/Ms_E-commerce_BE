@@ -1,6 +1,7 @@
 package models
 
 import (
+	"encoding/json"
 	"time"
 
 	"gorm.io/gorm"
@@ -8,46 +9,51 @@ import (
 
 type Product struct {
 	gorm.Model
-	Name        string    `gorm:"not null"`
-	Slug        string    `gorm:"uniqueIndex;not null"`
-	Description string    `gorm:"type:text"`
-	CategoryID  uint      `gorm:"not null"`
-	Category    *Category `gorm:"foreignKey:CategoryID"`
-	Variants    []*ProductVariant
-	Attributes  []*ProductAttribute
-	Collections []*Collection `gorm:"many2many:product_collections;"`
-	Reviews     []*Review
-	Rating      float64
-	Thumbnail   *Image
-	Pricing     ProductPricing `gorm:"embedded"`
-	CreatedAt   time.Time      `json:"created_at"`
-	UpdatedAt   time.Time      `json:"updated_at"`
+	Name           string    `gorm:"not null"`
+	Slug           string    `gorm:"uniqueIndex;not null"`
+	Description    string    `gorm:"type:text"`
+	SeoTitle       string    `gorm:"type:text"`
+	SeoDescription string    `gorm:"type:text"`
+	CategoryID     uint      `gorm:"not null"`
+	Category       *Category `gorm:"foreignKey:CategoryID"`
+	Variants       []*ProductVariant
+	Attributes     []*ProductAttribute
+	Collections    []*Collection `gorm:"many2many:product_collections;"`
+	Reviews        []*Review
+	Rating         float64
+	Thumbnail      *Image         `gorm:"foreignKey:ProductID"`
+	Pricing        ProductPricing `gorm:"embedded"`
+	CreatedAt      time.Time      `json:"created_at"`
+	UpdatedAt      time.Time      `json:"updated_at"`
 }
 
 type Category struct {
 	gorm.Model
-	Name        string     `gorm:"not null"`
-	Slug        string     `gorm:"uniqueIndex;not null"`
-	Description string     `gorm:"type:text"`
-	Products    []*Product `json:"products" gorm:"foreignKey:CategoryID"`
+	Name           string     `gorm:"not null"`
+	Slug           string     `gorm:"uniqueIndex;not null"`
+	Description    string     `gorm:"type:text"`
+	SeoTitle       string     `gorm:"type:text"`
+	SeoDescription string     `gorm:"type:text"`
+	Products       []*Product `json:"products" gorm:"foreignKey:CategoryID"`
 }
 
 type Collection struct {
 	gorm.Model
-	Name        string     `gorm:"not null"`
-	Slug        string     `gorm:"uniqueIndex;not null"`
-	Description string     `gorm:"type:text"`
-	Products    []*Product `gorm:"many2many:product_collections;"`
+	Name           string     `gorm:"not null"`
+	Slug           string     `gorm:"uniqueIndex;not null"`
+	Description    string     `gorm:"type:text"`
+	SeoTitle       string     `gorm:"type:text"`
+	SeoDescription string     `gorm:"type:text"`
+	Products       []*Product `gorm:"many2many:product_collections;"`
 }
 
 type ProductVariant struct {
 	gorm.Model
-	ProductID  uint                `gorm:"not null"`
-	Product    *Product            `gorm:"foreignKey:ProductID"`
-	Name       string              `gorm:"not null"`
-	Stock      int                 `gorm:"not null"`
-	Attributes []*VariantAttribute `json:"attributes" gorm:"foreignKey:VariantID"`
-	Pricing    ProductPricing      `gorm:"embedded"`
+	ProductID         uint           `gorm:"not null"`
+	Product           *Product       `gorm:"foreignKey:ProductID"`
+	Name              string         `gorm:"not null"`
+	QuantityAvailable int            `gorm:"not null"`
+	Pricing           ProductPricing `gorm:"embedded"`
 }
 
 type VariantAttribute struct {
@@ -63,7 +69,26 @@ type ProductAttribute struct {
 	ProductID uint     `gorm:"not null"`
 	Product   *Product `gorm:"foreignKey:ProductID"`
 	Name      string   `gorm:"not null"`
-	Values    []string `gorm:"type:text[]"`
+	Values    string   `gorm:"type:text"`
+}
+
+// GetValues returns the Values as a slice of strings
+func (pa *ProductAttribute) GetValues() ([]string, error) {
+	var values []string
+	if err := json.Unmarshal([]byte(pa.Values), &values); err != nil {
+		return nil, err
+	}
+	return values, nil
+}
+
+// SetValues sets the Values from a slice of strings
+func (pa *ProductAttribute) SetValues(values []string) error {
+	jsonBytes, err := json.Marshal(values)
+	if err != nil {
+		return err
+	}
+	pa.Values = string(jsonBytes)
+	return nil
 }
 
 type Review struct {
@@ -84,10 +109,13 @@ type User struct {
 }
 
 type Image struct {
-	URL    string `json:"url"`
-	Alt    string `json:"alt"`
-	Size   int    `json:"size"`
-	Format string `json:"format"`
+	gorm.Model
+	URL       string   `json:"url" gorm:"not null"`
+	Alt       string   `json:"alt"`
+	Size      int      `json:"size"`
+	Format    string   `json:"format"`
+	ProductID uint     `gorm:"not null"`
+	Product   *Product `gorm:"foreignKey:ProductID"`
 }
 
 type Price struct {

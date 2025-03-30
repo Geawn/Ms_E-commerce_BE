@@ -68,10 +68,15 @@ func (s *GRPCProductService) CreateProduct(ctx context.Context, req *pb.CreatePr
 		Description: req.Description,
 		CategoryID:  uint(req.CategoryId),
 		Rating:      req.Rating,
-		Thumbnail: &models.Image{
-			URL: req.ThumbnailUrl,
-			Alt: req.ThumbnailAlt,
-		},
+	}
+
+	if req.ThumbnailUrl != "" {
+		product.Thumbnail = &models.Image{
+			URL:    req.ThumbnailUrl,
+			Alt:    req.ThumbnailAlt,
+			Size:   int(req.ThumbnailSize),
+			Format: req.ThumbnailFormat,
+		}
 	}
 
 	if err := s.ProductService.CreateProduct(ctx, product); err != nil {
@@ -89,10 +94,15 @@ func (s *GRPCProductService) UpdateProduct(ctx context.Context, req *pb.UpdatePr
 		Description: req.Description,
 		CategoryID:  uint(req.CategoryId),
 		Rating:      req.Rating,
-		Thumbnail: &models.Image{
-			URL: req.ThumbnailUrl,
-			Alt: req.ThumbnailAlt,
-		},
+	}
+
+	if req.ThumbnailUrl != "" {
+		product.Thumbnail = &models.Image{
+			URL:    req.ThumbnailUrl,
+			Alt:    req.ThumbnailAlt,
+			Size:   int(req.ThumbnailSize),
+			Format: req.ThumbnailFormat,
+		}
 	}
 
 	if err := s.ProductService.UpdateProduct(ctx, product); err != nil {
@@ -116,78 +126,77 @@ func (s *GRPCProductService) mustEmbedUnimplementedProductServiceServer() {}
 
 func convertToProtoProduct(product *models.Product) *pb.Product {
 	protoProduct := &pb.Product{
-		Id:           uint32(product.ID),
-		Name:         product.Name,
-		Slug:         product.Slug,
-		Description:  product.Description,
-		CategoryId:   uint32(product.CategoryID),
-		Rating:       product.Rating,
-		ThumbnailUrl: product.Thumbnail.URL,
-		ThumbnailAlt: product.Thumbnail.Alt,
-		CreatedAt:    product.CreatedAt.String(),
-		UpdatedAt:    product.UpdatedAt.String(),
+		Id:             uint32(product.ID),
+		Name:           product.Name,
+		Slug:           product.Slug,
+		Description:    product.Description,
+		SeoTitle:       product.SeoTitle,
+		SeoDescription: product.SeoDescription,
+		CategoryId:     uint32(product.CategoryID),
+		CreatedAt:      product.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
+		UpdatedAt:      product.UpdatedAt.Format("2006-01-02T15:04:05Z07:00"),
 	}
 
 	if product.Category != nil && product.Category.ID != 0 {
 		protoProduct.Category = &pb.Category{
-			Id:          uint32(product.Category.ID),
-			Name:        product.Category.Name,
-			Slug:        product.Category.Slug,
-			Description: product.Category.Description,
+			Id:             uint32(product.Category.ID),
+			Name:           product.Category.Name,
+			Slug:           product.Category.Slug,
+			Description:    product.Category.Description,
+			SeoTitle:       product.Category.SeoTitle,
+			SeoDescription: product.Category.SeoDescription,
 		}
 	}
 
-	protoProduct.Variants = make([]*pb.Variant, len(product.Variants))
+	if product.Thumbnail != nil {
+		protoProduct.Thumbnail = &pb.Image{
+			Url:    product.Thumbnail.URL,
+			Alt:    product.Thumbnail.Alt,
+			Size:   int32(product.Thumbnail.Size),
+			Format: product.Thumbnail.Format,
+		}
+	}
+
+	protoProduct.Variants = make([]*pb.ProductVariant, len(product.Variants))
 	for i, variant := range product.Variants {
-		protoProduct.Variants[i] = &pb.Variant{
-			Id:    uint32(variant.ID),
-			Name:  variant.Name,
-			Stock: int32(variant.Stock),
-			Price: variant.Pricing.PriceRange.Start.Amount,
-		}
-
-		protoProduct.Variants[i].Attributes = make([]*pb.VariantAttribute, len(variant.Attributes))
-		for j, attr := range variant.Attributes {
-			protoProduct.Variants[i].Attributes[j] = &pb.VariantAttribute{
-				Id:    uint32(attr.ID),
-				Name:  attr.Name,
-				Value: attr.Value,
-			}
-		}
-	}
-
-	protoProduct.Attributes = make([]*pb.Attribute, len(product.Attributes))
-	for i, attr := range product.Attributes {
-		protoProduct.Attributes[i] = &pb.Attribute{
-			Id:     uint32(attr.ID),
-			Name:   attr.Name,
-			Values: attr.Values,
-		}
-	}
-
-	protoProduct.Collections = make([]*pb.Collection, len(product.Collections))
-	for i, collection := range product.Collections {
-		protoProduct.Collections[i] = &pb.Collection{
-			Id:          uint32(collection.ID),
-			Name:        collection.Name,
-			Slug:        collection.Slug,
-			Description: collection.Description,
-		}
-	}
-
-	protoProduct.Reviews = make([]*pb.Review, len(product.Reviews))
-	for i, review := range product.Reviews {
-		protoProduct.Reviews[i] = &pb.Review{
-			Id:        uint32(review.ID),
-			Rating:    review.Rating,
-			Comment:   review.Comment,
-			CreatedAt: review.CreatedAt.Format("2006-01-02T15:04:05Z07:00"),
-			User: &pb.User{
-				Id:    uint32(review.User.ID),
-				Name:  review.User.Name,
-				Email: review.User.Email,
+		protoProduct.Variants[i] = &pb.ProductVariant{
+			Id:                uint32(variant.ID),
+			Name:              variant.Name,
+			QuantityAvailable: int32(variant.QuantityAvailable),
+			Pricing: &pb.ProductPricing{
+				PriceRange: &pb.PriceRange{
+					Start: &pb.Price{
+						Gross: &pb.Money{
+							Amount:   variant.Pricing.PriceRange.Start.Amount,
+							Currency: variant.Pricing.PriceRange.Start.Currency,
+						},
+					},
+					Stop: &pb.Price{
+						Gross: &pb.Money{
+							Amount:   variant.Pricing.PriceRange.Stop.Amount,
+							Currency: variant.Pricing.PriceRange.Stop.Currency,
+						},
+					},
+				},
 			},
 		}
+	}
+
+	protoProduct.Pricing = &pb.ProductPricing{
+		PriceRange: &pb.PriceRange{
+			Start: &pb.Price{
+				Gross: &pb.Money{
+					Amount:   product.Pricing.PriceRange.Start.Amount,
+					Currency: product.Pricing.PriceRange.Start.Currency,
+				},
+			},
+			Stop: &pb.Price{
+				Gross: &pb.Money{
+					Amount:   product.Pricing.PriceRange.Stop.Amount,
+					Currency: product.Pricing.PriceRange.Stop.Currency,
+				},
+			},
+		},
 	}
 
 	return protoProduct

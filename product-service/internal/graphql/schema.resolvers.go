@@ -7,7 +7,6 @@ package graphql
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/Geawn/Ms_E-commerce_BE/product-service/internal/graphql/model"
 	"github.com/Geawn/Ms_E-commerce_BE/product-service/internal/models"
@@ -18,9 +17,71 @@ func (r *categoryResolver) ID(ctx context.Context, obj *models.Category) (string
 	return fmt.Sprintf("%d", obj.ID), nil
 }
 
+// Products is the resolver for the products field.
+func (r *categoryResolver) Products(ctx context.Context, obj *models.Category, first *int, channel string) (*models.ProductConnection, error) {
+	l := 20
+	if first != nil {
+		l = *first
+	}
+
+	products, err := r.productService.ListByCategory(ctx, fmt.Sprintf("%d", obj.ID), l, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	edges := make([]*models.ProductEdge, len(products))
+	for i, product := range products {
+		edges[i] = &models.ProductEdge{
+			Node:   product,
+			Cursor: fmt.Sprintf("%d", product.ID),
+		}
+	}
+
+	return &models.ProductConnection{
+		Edges: edges,
+		PageInfo: &models.PageInfo{
+			HasNextPage:     len(products) == l,
+			HasPreviousPage: false,
+			StartCursor:     "",
+			EndCursor:       fmt.Sprintf("%d", products[len(products)-1].ID),
+		},
+	}, nil
+}
+
 // ID is the resolver for the id field.
 func (r *collectionResolver) ID(ctx context.Context, obj *models.Collection) (string, error) {
-	return fmt.Sprintf("%d", obj.ID), nil
+	panic(fmt.Errorf("not implemented: ID - id"))
+}
+
+// Products is the resolver for the products field.
+func (r *collectionResolver) Products(ctx context.Context, obj *models.Collection, first *int, channel string) (*models.ProductConnection, error) {
+	l := 20
+	if first != nil {
+		l = *first
+	}
+
+	products, err := r.productService.ListByCollection(ctx, fmt.Sprintf("%d", obj.ID), l, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	edges := make([]*models.ProductEdge, len(products))
+	for i, product := range products {
+		edges[i] = &models.ProductEdge{
+			Node:   product,
+			Cursor: fmt.Sprintf("%d", product.ID),
+		}
+	}
+
+	return &models.ProductConnection{
+		Edges: edges,
+		PageInfo: &models.PageInfo{
+			HasNextPage:     len(products) == l,
+			HasPreviousPage: false,
+			StartCursor:     "",
+			EndCursor:       fmt.Sprintf("%d", products[len(products)-1].ID),
+		},
+	}, nil
 }
 
 // Gross is the resolver for the gross field.
@@ -39,6 +100,11 @@ func (r *productResolver) ID(ctx context.Context, obj *models.Product) (string, 
 // ID is the resolver for the id field.
 func (r *productAttributeResolver) ID(ctx context.Context, obj *models.ProductAttribute) (string, error) {
 	return fmt.Sprintf("%d", obj.ID), nil
+}
+
+// Values is the resolver for the values field.
+func (r *productAttributeResolver) Values(ctx context.Context, obj *models.ProductAttribute) ([]string, error) {
+	panic(fmt.Errorf("not implemented: Values - values"))
 }
 
 // ID is the resolver for the id field.
@@ -82,66 +148,14 @@ func (r *queryResolver) Products(ctx context.Context, first *int, channel string
 	}, nil
 }
 
-// ProductsByCategory is the resolver for the productsByCategory field.
-func (r *queryResolver) ProductsByCategory(ctx context.Context, categoryID string, first *int, channel string) (*models.ProductConnection, error) {
-	l := 20
-	if first != nil {
-		l = *first
-	}
-
-	products, err := r.productService.ListByCategory(ctx, categoryID, l, 0)
-	if err != nil {
-		return nil, err
-	}
-
-	edges := make([]*models.ProductEdge, len(products))
-	for i, product := range products {
-		edges[i] = &models.ProductEdge{
-			Node:   product,
-			Cursor: fmt.Sprintf("%d", product.ID),
-		}
-	}
-
-	return &models.ProductConnection{
-		Edges: edges,
-		PageInfo: &models.PageInfo{
-			HasNextPage:     len(products) == l,
-			HasPreviousPage: false,
-			StartCursor:     "",
-			EndCursor:       fmt.Sprintf("%d", products[len(products)-1].ID),
-		},
-	}, nil
+// Category is the resolver for the category field.
+func (r *queryResolver) Category(ctx context.Context, slug string, channel string) (*models.Category, error) {
+	return r.productService.GetCategoryBySlug(ctx, slug)
 }
 
-// ProductsByCollection is the resolver for the productsByCollection field.
-func (r *queryResolver) ProductsByCollection(ctx context.Context, collectionID string, first *int, channel string) (*models.ProductConnection, error) {
-	l := 20
-	if first != nil {
-		l = *first
-	}
-
-	products, err := r.productService.ListByCollection(ctx, collectionID, l, 0)
-	if err != nil {
-		return nil, err
-	}
-
-	edges := make([]*models.ProductEdge, len(products))
-	for i, product := range products {
-		edges[i] = &models.ProductEdge{
-			Node:   product,
-			Cursor: fmt.Sprintf("%d", product.ID),
-		}
-	}
-
-	return &models.ProductConnection{
-		Edges: edges,
-		PageInfo: &models.PageInfo{
-			HasNextPage:     len(products) == l,
-			HasPreviousPage: false,
-			StartCursor:     "",
-			EndCursor:       fmt.Sprintf("%d", products[len(products)-1].ID),
-		},
-	}, nil
+// Collection is the resolver for the collection field.
+func (r *queryResolver) Collection(ctx context.Context, slug string, channel string) (*models.Collection, error) {
+	return r.productService.GetCollectionBySlug(ctx, slug)
 }
 
 // SearchProducts is the resolver for the searchProducts field.
@@ -195,45 +209,6 @@ func (r *variantAttributeResolver) ID(ctx context.Context, obj *models.VariantAt
 	return fmt.Sprintf("%d", obj.ID), nil
 }
 
-// Thumbnail is the resolver for the thumbnail field.
-func (r *productResolver) Thumbnail(ctx context.Context, obj *models.Product, size *int, format *string) (*models.Image, error) {
-	if obj.Thumbnail == nil {
-		return nil, nil
-	}
-
-	// If size or format is provided, create a new image with the specified parameters
-	if size != nil || format != nil {
-		img := &models.Image{
-			URL: obj.Thumbnail.URL,
-			Alt: obj.Thumbnail.Alt,
-		}
-
-		if size != nil {
-			img.Size = *size
-			// Update URL to include size parameter
-			img.URL = fmt.Sprintf("%s?size=%d", img.URL, *size)
-		} else {
-			img.Size = obj.Thumbnail.Size
-		}
-
-		if format != nil {
-			img.Format = *format
-			// Update URL to include format parameter
-			if strings.Contains(img.URL, "?") {
-				img.URL = fmt.Sprintf("%s&format=%s", img.URL, *format)
-			} else {
-				img.URL = fmt.Sprintf("%s?format=%s", img.URL, *format)
-			}
-		} else {
-			img.Format = obj.Thumbnail.Format
-		}
-
-		return img, nil
-	}
-
-	return obj.Thumbnail, nil
-}
-
 // Category returns CategoryResolver implementation.
 func (r *Resolver) Category() CategoryResolver { return &categoryResolver{r} }
 
@@ -274,3 +249,41 @@ type queryResolver struct{ *Resolver }
 type reviewResolver struct{ *Resolver }
 type userResolver struct{ *Resolver }
 type variantAttributeResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+/*
+	func (r *queryResolver) ProductsByCollection(ctx context.Context, collectionID string, first *int, channel string) (*models.ProductConnection, error) {
+	l := 20
+	if first != nil {
+		l = *first
+	}
+
+	products, err := r.productService.ListByCollection(ctx, collectionID, l, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	edges := make([]*models.ProductEdge, len(products))
+	for i, product := range products {
+		edges[i] = &models.ProductEdge{
+			Node:   product,
+			Cursor: fmt.Sprintf("%d", product.ID),
+		}
+	}
+
+	return &models.ProductConnection{
+		Edges: edges,
+		PageInfo: &models.PageInfo{
+			HasNextPage:     len(products) == l,
+			HasPreviousPage: false,
+			StartCursor:     "",
+			EndCursor:       fmt.Sprintf("%d", products[len(products)-1].ID),
+		},
+	}, nil
+}
+*/

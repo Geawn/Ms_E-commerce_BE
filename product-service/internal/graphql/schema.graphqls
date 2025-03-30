@@ -3,14 +3,12 @@ type Product {
   name: String!
   slug: String!
   description: String
-  category: Category!
-  pricing: ProductPricing!
+  seoTitle: String
+  seoDescription: String
   thumbnail: Image
+  category: Category
   variants: [ProductVariant!]!
-  attributes: [ProductAttribute!]!
-  collections: [Collection!]!
-  rating: Float
-  reviews: [Review!]!
+  pricing: ProductPricing!
 }
 
 type ProductPricing {
@@ -41,25 +39,17 @@ type Image {
 type Category {
   id: ID!
   name: String!
-  slug: String!
   description: String
-  products: [Product!]!
-}
-
-type Collection {
-  id: ID!
-  name: String!
-  slug: String!
-  description: String
-  products: [Product!]!
+  seoDescription: String
+  seoTitle: String
+  products(first: Int, channel: String!): ProductConnection!
 }
 
 type ProductVariant {
   id: ID!
   name: String!
+  quantityAvailable: Int!
   pricing: ProductPricing!
-  attributes: [VariantAttribute!]!
-  stock: Int!
 }
 
 type VariantAttribute {
@@ -88,11 +78,21 @@ type User {
   email: String!
 }
 
+type Collection {
+  id: ID!
+  name: String!
+  slug: String!
+  description: String
+  seoDescription: String
+  seoTitle: String
+  products(first: Int, channel: String!): ProductConnection!
+}
+
 type Query {
   product(slug: String!, channel: String!): Product
   products(first: Int, channel: String!): ProductConnection!
-  productsByCategory(categoryID: ID!, first: Int, channel: String!): ProductConnection!
-  productsByCollection(collectionID: ID!, first: Int, channel: String!): ProductConnection!
+  category(slug: String!, channel: String!): Category
+  collection(slug: String!, channel: String!): Collection
   searchProducts(query: String!, first: Int, channel: String!): ProductConnection!
 }
 

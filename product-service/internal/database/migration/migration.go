@@ -8,6 +8,21 @@ import (
 )
 
 func RunMigrations(db *gorm.DB) error {
+	// Add quantity_available column to product_variants table if it doesn't exist
+	if err := db.Exec("ALTER TABLE product_variants ADD COLUMN IF NOT EXISTS quantity_available bigint DEFAULT 0").Error; err != nil {
+		return err
+	}
+
+	// Update existing records to have quantity_available = 0
+	if err := db.Exec("UPDATE product_variants SET quantity_available = 0 WHERE quantity_available IS NULL").Error; err != nil {
+		return err
+	}
+
+	// Make quantity_available NOT NULL after setting default values
+	if err := db.Exec("ALTER TABLE product_variants ALTER COLUMN quantity_available SET NOT NULL").Error; err != nil {
+		return err
+	}
+
 	// Auto migrate các model first
 	err := db.AutoMigrate(
 		&models.Product{},
@@ -48,19 +63,25 @@ func RunMigrations(db *gorm.DB) error {
 		// Tạo categories
 		categories := []models.Category{
 			{
-				Name:        "Electronics",
-				Slug:        "electronics",
-				Description: "Electronic devices and accessories",
+				Name:           "Electronics",
+				Slug:           "electronics",
+				Description:    "Electronic devices and accessories",
+				SeoTitle:       "Electronics - Best Electronic Devices and Accessories",
+				SeoDescription: "Shop the latest electronic devices and accessories at great prices. Find smartphones, laptops, tablets and more.",
 			},
 			{
-				Name:        "Clothing",
-				Slug:        "clothing",
-				Description: "Fashion items and accessories",
+				Name:           "Clothing",
+				Slug:           "clothing",
+				Description:    "Fashion items and accessories",
+				SeoTitle:       "Clothing - Fashion Items and Accessories",
+				SeoDescription: "Discover trendy fashion items and accessories. Shop for clothes, shoes, bags and more.",
 			},
 			{
-				Name:        "Books",
-				Slug:        "books",
-				Description: "Books and publications",
+				Name:           "Books",
+				Slug:           "books",
+				Description:    "Books and publications",
+				SeoTitle:       "Books - Best Books and Publications",
+				SeoDescription: "Browse our collection of books and publications. Find fiction, non-fiction, textbooks and more.",
 			},
 		}
 
@@ -155,17 +176,17 @@ func RunMigrations(db *gorm.DB) error {
 				Attributes: []*models.ProductAttribute{
 					{
 						Name:   "Color",
-						Values: []string{"Black", "White", "Blue"},
+						Values: `["Black", "White", "Blue"]`,
 					},
 					{
 						Name:   "Storage",
-						Values: []string{"128GB", "256GB", "512GB"},
+						Values: `["128GB", "256GB", "512GB"]`,
 					},
 				},
 				Variants: []*models.ProductVariant{
 					{
-						Name:  "128GB Black",
-						Stock: 50,
+						Name:              "128GB Black",
+						QuantityAvailable: 50,
 						Pricing: models.ProductPricing{
 							PriceRange: models.PriceRange{
 								Start: models.Price{
@@ -177,10 +198,6 @@ func RunMigrations(db *gorm.DB) error {
 									Currency: "USD",
 								},
 							},
-						},
-						Attributes: []*models.VariantAttribute{
-							{Name: "Storage", Value: "128GB"},
-							{Name: "Color", Value: "Black"},
 						},
 					},
 				},
@@ -212,17 +229,17 @@ func RunMigrations(db *gorm.DB) error {
 				Attributes: []*models.ProductAttribute{
 					{
 						Name:   "Size",
-						Values: []string{"S", "M", "L", "XL"},
+						Values: `["S", "M", "L", "XL"]`,
 					},
 					{
 						Name:   "Color",
-						Values: []string{"White", "Black", "Blue"},
+						Values: `["White", "Black", "Blue"]`,
 					},
 				},
 				Variants: []*models.ProductVariant{
 					{
-						Name:  "Small White",
-						Stock: 100,
+						Name:              "Small White",
+						QuantityAvailable: 100,
 						Pricing: models.ProductPricing{
 							PriceRange: models.PriceRange{
 								Start: models.Price{
@@ -234,10 +251,6 @@ func RunMigrations(db *gorm.DB) error {
 									Currency: "USD",
 								},
 							},
-						},
-						Attributes: []*models.VariantAttribute{
-							{Name: "Size", Value: "S"},
-							{Name: "Color", Value: "White"},
 						},
 					},
 				},

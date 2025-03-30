@@ -121,3 +121,7 @@ func (s *ProductService) UpdateProductRating(ctx context.Context, productID uint
 	product.Rating = totalRating / float64(len(reviews))
 	return s.repo.Update(ctx, product)
 }
+
+func (s *ProductService) GetCategoryBySlug(ctx context.Context, slug string) (*models.Category, error) {
+	return s.repo.GetCategoryBySlug(ctx, slug)
+}

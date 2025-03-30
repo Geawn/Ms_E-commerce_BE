@@ -5,49 +5,47 @@ type Product {
   description: String
   seoTitle: String
   seoDescription: String
-  thumbnail: Image
+  thumbnail(size: Int, format: String): Image
   category: Category
-  variants: [Variant!]!
+  variants: [ProductVariant!]!
   pricing: ProductPricing!
 }
 
 type Image {
   url: String!
   alt: String
+  size: Int
+  format: String
 }
 
 type Category {
   id: ID!
   name: String!
-  slug: String!
 }
 
-type Variant {
+type ProductVariant {
   id: ID!
   name: String!
-  sku: String!
-  price: Money!
-  attributes: [VariantAttribute!]!
+  quantityAvailable: Int!
+  pricing: ProductPricing!
 }
 
-type VariantAttribute {
-  id: ID!
-  name: String!
-  value: String!
+type ProductPricing {
+  priceRange: PriceRange!
+}
+
+type PriceRange {
+  start: Price!
+  stop: Price!
+}
+
+type Price {
+  gross: Money!
 }
 
 type Money {
   amount: Float!
   currency: String!
-}
-
-type PriceRange {
-  start: Money!
-  stop: Money!
-}
-
-type ProductPricing {
-  priceRange: PriceRange!
 }
 
 type ProductEdge {
@@ -72,4 +70,19 @@ type Query {
   products(first: Int, after: String): ProductConnection!
   productsByCategory(categorySlug: String!, first: Int, after: String): ProductConnection!
   searchProducts(query: String!, first: Int, after: String): ProductConnection!
+}
+
+fragment VariantDetails on Variant {
+  id
+  name
+  sku
+  price {
+    amount
+    currency
+  }
+  attributes {
+    id
+    name
+    value
+  }
 } 
