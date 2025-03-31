@@ -1,0 +1,17 @@
+type Country {
+    country: String!
+    code: String!
+}
+
+type Channel {
+    id: ID!
+    name: String!
+    slug: String!
+    isActive: Boolean!
+    currencyCode: String!
+    countries: [Country!]!
+}
+
+type Query {
+    channels: [Channel!]!
+} 
