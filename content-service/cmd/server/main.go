@@ -1,10 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"log"
-	"os"
 
 	"github.com/Geawn/Ms_E-commerce_BE/content-service/internal/config"
+	"github.com/Geawn/Ms_E-commerce_BE/content-service/internal/database/migration"
 	"github.com/Geawn/Ms_E-commerce_BE/content-service/internal/graphql"
 	"github.com/Geawn/Ms_E-commerce_BE/content-service/internal/repository"
 	"github.com/Geawn/Ms_E-commerce_BE/content-service/internal/service"
@@ -21,17 +22,27 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 
+	// Load config
+	cfg := config.LoadConfig()
+	log.Printf("Loaded config: Database URL: %s, Redis Addr: %s, Port: %s", 
+		cfg.DatabaseURL, cfg.RedisAddr, cfg.Port)
+
 	// Initialize Redis
 	rdb := redis.NewClient(&redis.Options{
-		Addr:     os.Getenv("REDIS_ADDR"),
-		Password: os.Getenv("REDIS_PASSWORD"),
+		Addr:     cfg.RedisAddr,
+		Password: cfg.RedisPassword,
 		DB:       0,
 	})
 
 	// Initialize PostgreSQL
-	db, err := gorm.Open(postgres.Open(os.Getenv("DATABASE_URL")), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(cfg.DatabaseURL), &gorm.Config{})
 	if err != nil {
 		log.Fatal("Failed to connect to database:", err)
+	}
+
+	// Run migrations
+	if err := migration.RunMigrations(db); err != nil {
+		log.Fatal("Failed to run migrations:", err)
 	}
 
 	// Initialize repositories
@@ -52,7 +63,9 @@ func main() {
 	r.POST("/query", graphql.Handler(resolver))
 
 	// Start server
-	if err := r.Run(":8080"); err != nil {
+	addr := fmt.Sprintf(":%s", cfg.Port)
+	log.Printf("Starting server on %s", addr)
+	if err := r.Run(addr); err != nil {
 		log.Fatal("Failed to start server:", err)
 	}
 } 
