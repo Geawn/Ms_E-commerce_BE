@@ -24,7 +24,7 @@ func main() {
 
 	// Load config
 	cfg := config.LoadConfig()
-	log.Printf("Loaded config: Database URL: %s, Redis Addr: %s, Port: %s", 
+	log.Printf("Loaded config: Database URL: %s, Redis Addr: %s, Port: %s",
 		cfg.DatabaseURL, cfg.RedisAddr, cfg.Port)
 
 	// Initialize Redis
@@ -54,13 +54,16 @@ func main() {
 	menuService := service.NewMenuService(menuRepo)
 
 	// Initialize GraphQL resolver
-	resolver := graphql.NewResolver(pageService, menuService)
+	resolver := &graphql.Resolver{
+		PageService: pageService,
+		MenuService: menuService,
+	}
 
 	// Initialize Gin router
 	r := gin.Default()
 
-	// Add GraphQL handler
-	r.POST("/query", graphql.Handler(resolver))
+	// Add GraphQL endpoint
+	r.POST("/query", graphql.GraphQLHandler(resolver))
 
 	// Start server
 	addr := fmt.Sprintf(":%s", cfg.Port)
@@ -68,4 +71,4 @@ func main() {
 	if err := r.Run(addr); err != nil {
 		log.Fatal("Failed to start server:", err)
 	}
-} 
+}
