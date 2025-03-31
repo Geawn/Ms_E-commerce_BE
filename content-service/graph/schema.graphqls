@@ -1,0 +1,48 @@
+type Menu {
+  id: ID!
+  name: String!
+  slug: String!
+  channel: String!
+  items: [MenuItem!]!
+}
+
+type MenuItem {
+  id: ID!
+  name: String!
+  level: Int!
+  category: Category
+  collection: Collection
+  page: Page
+  url: String
+  children: [MenuItem!]
+}
+
+type Page {
+  id: ID!
+  title: String!
+  slug: String!
+  content: String!
+  seoTitle: String
+  seoDescription: String
+  isPublished: Boolean!
+  publishedAt: Time
+}
+
+type Category {
+  id: ID!
+  name: String!
+  slug: String!
+}
+
+type Collection {
+  id: ID!
+  name: String!
+  slug: String!
+}
+
+scalar Time
+
+type Query {
+  menu(slug: String!, channel: String!): Menu
+  page(slug: String!): Page
+} 
