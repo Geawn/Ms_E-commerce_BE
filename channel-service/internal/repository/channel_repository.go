@@ -3,7 +3,7 @@ package repository
 import (
 	"context"
 
-	"github.com/yourusername/channel-service/internal/model"
+	"github.com/Geawn/Ms_E-commerce_BE/channel-service/internal/model"
 )
 
 type ChannelRepository interface {
