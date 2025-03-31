@@ -1,0 +1,40 @@
+type Page {
+  id: ID!
+  slug: String!
+  title: String!
+  seoTitle: String
+  seoDescription: String
+  content: String!
+}
+
+type Category {
+  id: ID!
+  slug: String!
+  name: String!
+}
+
+type Collection {
+  id: ID!
+  name: String!
+  slug: String!
+}
+
+type MenuItem {
+  id: ID!
+  name: String!
+  level: Int!
+  category: Category
+  collection: Collection
+  page: Page
+  url: String!
+  children: [MenuItem!]
+}
+
+type Menu {
+  items: [MenuItem!]!
+}
+
+type Query {
+  page(slug: String!): Page
+  menu(slug: String!, channel: String!): Menu
+} 

@@ -7,15 +7,13 @@ import (
 )
 
 type Page struct {
-	ID             uint           `gorm:"primarykey" json:"id"`
-	CreatedAt      time.Time      `json:"created_at"`
-	UpdatedAt      time.Time      `json:"updated_at"`
-	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
+	ID             string         `json:"id" gorm:"primaryKey"`
+	Slug           string         `json:"slug" gorm:"uniqueIndex"`
 	Title          string         `json:"title"`
-	Slug           string         `gorm:"uniqueIndex" json:"slug"`
+	SeoTitle       string         `json:"seoTitle"`
+	SeoDescription string         `json:"seoDescription"`
 	Content        string         `json:"content"`
-	SeoTitle       string         `json:"seo_title"`
-	SeoDescription string         `json:"seo_description"`
-	IsPublished    bool           `json:"is_published" gorm:"default:false"`
-	PublishedAt    *time.Time     `json:"published_at"`
-}
+	CreatedAt      time.Time      `json:"createdAt"`
+	UpdatedAt      time.Time      `json:"updatedAt"`
+	DeletedAt      gorm.DeletedAt `json:"deletedAt" gorm:"index"`
+} 
