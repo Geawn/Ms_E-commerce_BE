@@ -142,8 +142,9 @@ type ProductCollection struct {
 
 // ProductConnection represents a paginated list of products
 type ProductConnection struct {
-	Edges    []*ProductEdge
-	PageInfo *PageInfo
+	Edges      []*ProductEdge
+	PageInfo   *PageInfo
+	TotalCount int
 }
 
 // ProductEdge represents a single product in a connection

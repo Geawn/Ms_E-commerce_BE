@@ -2,10 +2,102 @@
 
 package model
 
+import (
+	"fmt"
+	"io"
+	"strconv"
+)
+
 type Money struct {
 	Amount   float64 `json:"amount"`
 	Currency string  `json:"currency"`
 }
 
 type Query struct {
+}
+
+type OrderDirection string
+
+const (
+	OrderDirectionAsc  OrderDirection = "ASC"
+	OrderDirectionDesc OrderDirection = "DESC"
+)
+
+var AllOrderDirection = []OrderDirection{
+	OrderDirectionAsc,
+	OrderDirectionDesc,
+}
+
+func (e OrderDirection) IsValid() bool {
+	switch e {
+	case OrderDirectionAsc, OrderDirectionDesc:
+		return true
+	}
+	return false
+}
+
+func (e OrderDirection) String() string {
+	return string(e)
+}
+
+func (e *OrderDirection) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = OrderDirection(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid OrderDirection", str)
+	}
+	return nil
+}
+
+func (e OrderDirection) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type ProductOrderField string
+
+const (
+	ProductOrderFieldName      ProductOrderField = "NAME"
+	ProductOrderFieldPrice     ProductOrderField = "PRICE"
+	ProductOrderFieldCreatedAt ProductOrderField = "CREATED_AT"
+	ProductOrderFieldUpdatedAt ProductOrderField = "UPDATED_AT"
+)
+
+var AllProductOrderField = []ProductOrderField{
+	ProductOrderFieldName,
+	ProductOrderFieldPrice,
+	ProductOrderFieldCreatedAt,
+	ProductOrderFieldUpdatedAt,
+}
+
+func (e ProductOrderField) IsValid() bool {
+	switch e {
+	case ProductOrderFieldName, ProductOrderFieldPrice, ProductOrderFieldCreatedAt, ProductOrderFieldUpdatedAt:
+		return true
+	}
+	return false
+}
+
+func (e ProductOrderField) String() string {
+	return string(e)
+}
+
+func (e *ProductOrderField) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = ProductOrderField(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid ProductOrderField", str)
+	}
+	return nil
+}
+
+func (e ProductOrderField) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
 }

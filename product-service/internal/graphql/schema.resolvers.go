@@ -7,6 +7,7 @@ package graphql
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/Geawn/Ms_E-commerce_BE/product-service/internal/graphql/model"
 	"github.com/Geawn/Ms_E-commerce_BE/product-service/internal/models"
@@ -118,13 +119,23 @@ func (r *queryResolver) Product(ctx context.Context, slug string, channel string
 }
 
 // Products is the resolver for the products field.
-func (r *queryResolver) Products(ctx context.Context, first *int, channel string) (*models.ProductConnection, error) {
-	l := 20
-	if first != nil {
-		l = *first
+func (r *queryResolver) Products(ctx context.Context, first int, after *string, channel string) (*models.ProductConnection, error) {
+	offset := 0
+	if after != nil {
+		// Convert cursor to offset
+		cursorID, err := strconv.ParseUint(*after, 10, 32)
+		if err != nil {
+			return nil, err
+		}
+		// Get the position of the cursor in the list
+		position, err := r.productService.GetProductPosition(ctx, uint(cursorID))
+		if err != nil {
+			return nil, err
+		}
+		offset = position + 1
 	}
 
-	products, err := r.productService.ListProducts(ctx, l, 0)
+	products, err := r.productService.ListProducts(ctx, first, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -137,12 +148,21 @@ func (r *queryResolver) Products(ctx context.Context, first *int, channel string
 		}
 	}
 
+	// Get total count for pagination
+	totalCount, err := r.productService.GetTotalProducts(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	hasNextPage := offset+len(products) < totalCount
+
 	return &models.ProductConnection{
-		Edges: edges,
+		Edges:      edges,
+		TotalCount: totalCount,
 		PageInfo: &models.PageInfo{
-			HasNextPage:     len(products) == l,
-			HasPreviousPage: false,
-			StartCursor:     "",
+			HasNextPage:     hasNextPage,
+			HasPreviousPage: offset > 0,
+			StartCursor:     fmt.Sprintf("%d", products[0].ID),
 			EndCursor:       fmt.Sprintf("%d", products[len(products)-1].ID),
 		},
 	}, nil
@@ -159,13 +179,23 @@ func (r *queryResolver) Collection(ctx context.Context, slug string, channel str
 }
 
 // SearchProducts is the resolver for the searchProducts field.
-func (r *queryResolver) SearchProducts(ctx context.Context, query string, first *int, channel string) (*models.ProductConnection, error) {
-	l := 20
-	if first != nil {
-		l = *first
+func (r *queryResolver) SearchProducts(ctx context.Context, search string, sortBy model.ProductOrderField, sortDirection model.OrderDirection, first int, after *string, channel string) (*models.ProductConnection, error) {
+	offset := 0
+	if after != nil {
+		// Convert cursor to offset
+		cursorID, err := strconv.ParseUint(*after, 10, 32)
+		if err != nil {
+			return nil, err
+		}
+		// Get the position of the cursor in the list
+		position, err := r.productService.GetProductPosition(ctx, uint(cursorID))
+		if err != nil {
+			return nil, err
+		}
+		offset = position + 1
 	}
 
-	products, err := r.productService.SearchProducts(ctx, query, l, 0)
+	products, err := r.productService.SearchProducts(ctx, search, first, offset, string(sortBy), string(sortDirection))
 	if err != nil {
 		return nil, err
 	}
@@ -178,14 +208,28 @@ func (r *queryResolver) SearchProducts(ctx context.Context, query string, first 
 		}
 	}
 
+	// Get total count for pagination
+	totalCount, err := r.productService.GetTotalSearchResults(ctx, search)
+	if err != nil {
+		return nil, err
+	}
+
+	hasNextPage := offset+len(products) < totalCount
+
+	pageInfo := &models.PageInfo{
+		HasNextPage:     hasNextPage,
+		HasPreviousPage: offset > 0,
+	}
+
+	if len(products) > 0 {
+		pageInfo.StartCursor = fmt.Sprintf("%d", products[0].ID)
+		pageInfo.EndCursor = fmt.Sprintf("%d", products[len(products)-1].ID)
+	}
+
 	return &models.ProductConnection{
-		Edges: edges,
-		PageInfo: &models.PageInfo{
-			HasNextPage:     len(products) == l,
-			HasPreviousPage: false,
-			StartCursor:     "",
-			EndCursor:       fmt.Sprintf("%d", products[len(products)-1].ID),
-		},
+		Edges:      edges,
+		TotalCount: totalCount,
+		PageInfo:   pageInfo,
 	}, nil
 }
 
@@ -249,41 +293,3 @@ type queryResolver struct{ *Resolver }
 type reviewResolver struct{ *Resolver }
 type userResolver struct{ *Resolver }
 type variantAttributeResolver struct{ *Resolver }
-
-// !!! WARNING !!!
-// The code below was going to be deleted when updating resolvers. It has been copied here so you have
-// one last chance to move it out of harms way if you want. There are two reasons this happens:
-//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
-//    it when you're done.
-//  - You have helper methods in this file. Move them out to keep these resolver files clean.
-/*
-	func (r *queryResolver) ProductsByCollection(ctx context.Context, collectionID string, first *int, channel string) (*models.ProductConnection, error) {
-	l := 20
-	if first != nil {
-		l = *first
-	}
-
-	products, err := r.productService.ListByCollection(ctx, collectionID, l, 0)
-	if err != nil {
-		return nil, err
-	}
-
-	edges := make([]*models.ProductEdge, len(products))
-	for i, product := range products {
-		edges[i] = &models.ProductEdge{
-			Node:   product,
-			Cursor: fmt.Sprintf("%d", product.ID),
-		}
-	}
-
-	return &models.ProductConnection{
-		Edges: edges,
-		PageInfo: &models.PageInfo{
-			HasNextPage:     len(products) == l,
-			HasPreviousPage: false,
-			StartCursor:     "",
-			EndCursor:       fmt.Sprintf("%d", products[len(products)-1].ID),
-		},
-	}, nil
-}
-*/

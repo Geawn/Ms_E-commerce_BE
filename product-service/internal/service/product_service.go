@@ -42,8 +42,12 @@ func (s *ProductService) ListByCollection(ctx context.Context, collectionID stri
 	return s.repo.ListByCollection(ctx, uint(id), limit, offset)
 }
 
-func (s *ProductService) SearchProducts(ctx context.Context, query string, limit, offset int) ([]*models.Product, error) {
-	return s.repo.Search(ctx, query, limit, offset)
+func (s *ProductService) SearchProducts(ctx context.Context, query string, limit, offset int, sortBy string, sortDirection string) ([]*models.Product, error) {
+	return s.repo.Search(ctx, query, limit, offset, sortBy, sortDirection)
+}
+
+func (s *ProductService) GetTotalSearchResults(ctx context.Context, query string) (int, error) {
+	return s.repo.GetTotalSearchResults(ctx, query)
 }
 
 func (s *ProductService) CreateProduct(ctx context.Context, product *models.Product) error {
@@ -124,4 +128,12 @@ func (s *ProductService) UpdateProductRating(ctx context.Context, productID uint
 
 func (s *ProductService) GetCategoryBySlug(ctx context.Context, slug string) (*models.Category, error) {
 	return s.repo.GetCategoryBySlug(ctx, slug)
+}
+
+func (s *ProductService) GetProductPosition(ctx context.Context, productID uint) (int, error) {
+	return s.repo.GetPosition(ctx, productID)
+}
+
+func (s *ProductService) GetTotalProducts(ctx context.Context) (int, error) {
+	return s.repo.GetTotal(ctx)
 }

@@ -106,17 +106,40 @@ message GetProductRequest {
 message ListProductsRequest {
   int32 limit = 1;
   int32 offset = 2;
+  string after = 3;
 }
 
 message ListProductsResponse {
   repeated Product products = 1;
   int32 total = 2;
+  PageInfo page_info = 3;
+}
+
+message PageInfo {
+  bool has_next_page = 1;
+  bool has_previous_page = 2;
+  string start_cursor = 3;
+  string end_cursor = 4;
+}
+
+enum ProductOrderField {
+  NAME = 0;
+  PRICE = 1;
+  CREATED_AT = 2;
+  UPDATED_AT = 3;
+}
+
+enum OrderDirection {
+  ASC = 0;
+  DESC = 1;
 }
 
 message SearchProductsRequest {
   string query = 1;
   int32 limit = 2;
-  int32 offset = 3;
+  string after = 3;
+  ProductOrderField sort_by = 4;
+  OrderDirection sort_direction = 5;
 }
 
 message CreateProductRequest {

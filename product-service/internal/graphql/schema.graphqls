@@ -90,15 +90,23 @@ type Collection {
 
 type Query {
   product(slug: String!, channel: String!): Product
-  products(first: Int, channel: String!): ProductConnection!
+  products(first: Int!, after: String, channel: String!): ProductConnection!
   category(slug: String!, channel: String!): Category
   collection(slug: String!, channel: String!): Collection
-  searchProducts(query: String!, first: Int, channel: String!): ProductConnection!
+  searchProducts(
+    search: String!
+    sortBy: ProductOrderField!
+    sortDirection: OrderDirection!
+    first: Int!
+    after: String
+    channel: String!
+  ): ProductConnection!
 }
 
 type ProductConnection {
   edges: [ProductEdge!]!
   pageInfo: PageInfo!
+  totalCount: Int!
 }
 
 type ProductEdge {
@@ -111,4 +119,16 @@ type PageInfo {
   hasPreviousPage: Boolean!
   startCursor: String
   endCursor: String
+}
+
+enum ProductOrderField {
+  NAME
+  PRICE
+  CREATED_AT
+  UPDATED_AT
+}
+
+enum OrderDirection {
+  ASC
+  DESC
 } 

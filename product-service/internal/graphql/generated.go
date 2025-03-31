@@ -123,8 +123,9 @@ type ComplexityRoot struct {
 	}
 
 	ProductConnection struct {
-		Edges    func(childComplexity int) int
-		PageInfo func(childComplexity int) int
+		Edges      func(childComplexity int) int
+		PageInfo   func(childComplexity int) int
+		TotalCount func(childComplexity int) int
 	}
 
 	ProductEdge struct {
@@ -147,8 +148,8 @@ type ComplexityRoot struct {
 		Category       func(childComplexity int, slug string, channel string) int
 		Collection     func(childComplexity int, slug string, channel string) int
 		Product        func(childComplexity int, slug string, channel string) int
-		Products       func(childComplexity int, first *int, channel string) int
-		SearchProducts func(childComplexity int, query string, first *int, channel string) int
+		Products       func(childComplexity int, first int, after *string, channel string) int
+		SearchProducts func(childComplexity int, search string, sortBy model.ProductOrderField, sortDirection model.OrderDirection, first int, after *string, channel string) int
 	}
 
 	Review struct {
@@ -198,10 +199,10 @@ type ProductVariantResolver interface {
 }
 type QueryResolver interface {
 	Product(ctx context.Context, slug string, channel string) (*models.Product, error)
-	Products(ctx context.Context, first *int, channel string) (*models.ProductConnection, error)
+	Products(ctx context.Context, first int, after *string, channel string) (*models.ProductConnection, error)
 	Category(ctx context.Context, slug string, channel string) (*models.Category, error)
 	Collection(ctx context.Context, slug string, channel string) (*models.Collection, error)
-	SearchProducts(ctx context.Context, query string, first *int, channel string) (*models.ProductConnection, error)
+	SearchProducts(ctx context.Context, search string, sortBy model.ProductOrderField, sortDirection model.OrderDirection, first int, after *string, channel string) (*models.ProductConnection, error)
 }
 type ReviewResolver interface {
 	ID(ctx context.Context, obj *models.Review) (string, error)
@@ -531,6 +532,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.ProductConnection.PageInfo(childComplexity), true
 
+	case "ProductConnection.totalCount":
+		if e.complexity.ProductConnection.TotalCount == nil {
+			break
+		}
+
+		return e.complexity.ProductConnection.TotalCount(childComplexity), true
+
 	case "ProductEdge.cursor":
 		if e.complexity.ProductEdge.Cursor == nil {
 			break
@@ -626,7 +634,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.Products(childComplexity, args["first"].(*int), args["channel"].(string)), true
+		return e.complexity.Query.Products(childComplexity, args["first"].(int), args["after"].(*string), args["channel"].(string)), true
 
 	case "Query.searchProducts":
 		if e.complexity.Query.SearchProducts == nil {
@@ -638,7 +646,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.SearchProducts(childComplexity, args["query"].(string), args["first"].(*int), args["channel"].(string)), true
+		return e.complexity.Query.SearchProducts(childComplexity, args["search"].(string), args["sortBy"].(model.ProductOrderField), args["sortDirection"].(model.OrderDirection), args["first"].(int), args["after"].(*string), args["channel"].(string)), true
 
 	case "Review.comment":
 		if e.complexity.Review.Comment == nil {
@@ -1116,28 +1124,51 @@ func (ec *executionContext) field_Query_products_args(ctx context.Context, rawAr
 		return nil, err
 	}
 	args["first"] = arg0
-	arg1, err := ec.field_Query_products_argsChannel(ctx, rawArgs)
+	arg1, err := ec.field_Query_products_argsAfter(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
-	args["channel"] = arg1
+	args["after"] = arg1
+	arg2, err := ec.field_Query_products_argsChannel(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["channel"] = arg2
 	return args, nil
 }
 func (ec *executionContext) field_Query_products_argsFirst(
 	ctx context.Context,
 	rawArgs map[string]any,
-) (*int, error) {
+) (int, error) {
 	if _, ok := rawArgs["first"]; !ok {
-		var zeroVal *int
+		var zeroVal int
 		return zeroVal, nil
 	}
 
 	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("first"))
 	if tmp, ok := rawArgs["first"]; ok {
-		return ec.unmarshalOInt2ᚖint(ctx, tmp)
+		return ec.unmarshalNInt2int(ctx, tmp)
 	}
 
-	var zeroVal *int
+	var zeroVal int
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_products_argsAfter(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*string, error) {
+	if _, ok := rawArgs["after"]; !ok {
+		var zeroVal *string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("after"))
+	if tmp, ok := rawArgs["after"]; ok {
+		return ec.unmarshalOString2ᚖstring(ctx, tmp)
+	}
+
+	var zeroVal *string
 	return zeroVal, nil
 }
 
@@ -1162,34 +1193,49 @@ func (ec *executionContext) field_Query_products_argsChannel(
 func (ec *executionContext) field_Query_searchProducts_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := ec.field_Query_searchProducts_argsQuery(ctx, rawArgs)
+	arg0, err := ec.field_Query_searchProducts_argsSearch(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
-	args["query"] = arg0
-	arg1, err := ec.field_Query_searchProducts_argsFirst(ctx, rawArgs)
+	args["search"] = arg0
+	arg1, err := ec.field_Query_searchProducts_argsSortBy(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
-	args["first"] = arg1
-	arg2, err := ec.field_Query_searchProducts_argsChannel(ctx, rawArgs)
+	args["sortBy"] = arg1
+	arg2, err := ec.field_Query_searchProducts_argsSortDirection(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
-	args["channel"] = arg2
+	args["sortDirection"] = arg2
+	arg3, err := ec.field_Query_searchProducts_argsFirst(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["first"] = arg3
+	arg4, err := ec.field_Query_searchProducts_argsAfter(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["after"] = arg4
+	arg5, err := ec.field_Query_searchProducts_argsChannel(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["channel"] = arg5
 	return args, nil
 }
-func (ec *executionContext) field_Query_searchProducts_argsQuery(
+func (ec *executionContext) field_Query_searchProducts_argsSearch(
 	ctx context.Context,
 	rawArgs map[string]any,
 ) (string, error) {
-	if _, ok := rawArgs["query"]; !ok {
+	if _, ok := rawArgs["search"]; !ok {
 		var zeroVal string
 		return zeroVal, nil
 	}
 
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("query"))
-	if tmp, ok := rawArgs["query"]; ok {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("search"))
+	if tmp, ok := rawArgs["search"]; ok {
 		return ec.unmarshalNString2string(ctx, tmp)
 	}
 
@@ -1197,21 +1243,75 @@ func (ec *executionContext) field_Query_searchProducts_argsQuery(
 	return zeroVal, nil
 }
 
+func (ec *executionContext) field_Query_searchProducts_argsSortBy(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.ProductOrderField, error) {
+	if _, ok := rawArgs["sortBy"]; !ok {
+		var zeroVal model.ProductOrderField
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("sortBy"))
+	if tmp, ok := rawArgs["sortBy"]; ok {
+		return ec.unmarshalNProductOrderField2githubᚗcomᚋGeawnᚋMs_Eᚑcommerce_BEᚋproductᚑserviceᚋinternalᚋgraphqlᚋmodelᚐProductOrderField(ctx, tmp)
+	}
+
+	var zeroVal model.ProductOrderField
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_searchProducts_argsSortDirection(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (model.OrderDirection, error) {
+	if _, ok := rawArgs["sortDirection"]; !ok {
+		var zeroVal model.OrderDirection
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("sortDirection"))
+	if tmp, ok := rawArgs["sortDirection"]; ok {
+		return ec.unmarshalNOrderDirection2githubᚗcomᚋGeawnᚋMs_Eᚑcommerce_BEᚋproductᚑserviceᚋinternalᚋgraphqlᚋmodelᚐOrderDirection(ctx, tmp)
+	}
+
+	var zeroVal model.OrderDirection
+	return zeroVal, nil
+}
+
 func (ec *executionContext) field_Query_searchProducts_argsFirst(
 	ctx context.Context,
 	rawArgs map[string]any,
-) (*int, error) {
+) (int, error) {
 	if _, ok := rawArgs["first"]; !ok {
-		var zeroVal *int
+		var zeroVal int
 		return zeroVal, nil
 	}
 
 	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("first"))
 	if tmp, ok := rawArgs["first"]; ok {
-		return ec.unmarshalOInt2ᚖint(ctx, tmp)
+		return ec.unmarshalNInt2int(ctx, tmp)
 	}
 
-	var zeroVal *int
+	var zeroVal int
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_searchProducts_argsAfter(
+	ctx context.Context,
+	rawArgs map[string]any,
+) (*string, error) {
+	if _, ok := rawArgs["after"]; !ok {
+		var zeroVal *string
+		return zeroVal, nil
+	}
+
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("after"))
+	if tmp, ok := rawArgs["after"]; ok {
+		return ec.unmarshalOString2ᚖstring(ctx, tmp)
+	}
+
+	var zeroVal *string
 	return zeroVal, nil
 }
 
@@ -1607,6 +1707,8 @@ func (ec *executionContext) fieldContext_Category_products(ctx context.Context, 
 				return ec.fieldContext_ProductConnection_edges(ctx, field)
 			case "pageInfo":
 				return ec.fieldContext_ProductConnection_pageInfo(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_ProductConnection_totalCount(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type ProductConnection", field.Name)
 		},
@@ -1923,6 +2025,8 @@ func (ec *executionContext) fieldContext_Collection_products(ctx context.Context
 				return ec.fieldContext_ProductConnection_edges(ctx, field)
 			case "pageInfo":
 				return ec.fieldContext_ProductConnection_pageInfo(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_ProductConnection_totalCount(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type ProductConnection", field.Name)
 		},
@@ -3211,6 +3315,50 @@ func (ec *executionContext) fieldContext_ProductConnection_pageInfo(_ context.Co
 	return fc, nil
 }
 
+func (ec *executionContext) _ProductConnection_totalCount(ctx context.Context, field graphql.CollectedField, obj *models.ProductConnection) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ProductConnection_totalCount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TotalCount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ProductConnection_totalCount(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ProductConnection",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _ProductEdge_node(ctx context.Context, field graphql.CollectedField, obj *models.ProductEdge) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_ProductEdge_node(ctx, field)
 	if err != nil {
@@ -3639,7 +3787,7 @@ func (ec *executionContext) _Query_products(ctx context.Context, field graphql.C
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Products(rctx, fc.Args["first"].(*int), fc.Args["channel"].(string))
+		return ec.resolvers.Query().Products(rctx, fc.Args["first"].(int), fc.Args["after"].(*string), fc.Args["channel"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3668,6 +3816,8 @@ func (ec *executionContext) fieldContext_Query_products(ctx context.Context, fie
 				return ec.fieldContext_ProductConnection_edges(ctx, field)
 			case "pageInfo":
 				return ec.fieldContext_ProductConnection_pageInfo(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_ProductConnection_totalCount(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type ProductConnection", field.Name)
 		},
@@ -3834,7 +3984,7 @@ func (ec *executionContext) _Query_searchProducts(ctx context.Context, field gra
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().SearchProducts(rctx, fc.Args["query"].(string), fc.Args["first"].(*int), fc.Args["channel"].(string))
+		return ec.resolvers.Query().SearchProducts(rctx, fc.Args["search"].(string), fc.Args["sortBy"].(model.ProductOrderField), fc.Args["sortDirection"].(model.OrderDirection), fc.Args["first"].(int), fc.Args["after"].(*string), fc.Args["channel"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3863,6 +4013,8 @@ func (ec *executionContext) fieldContext_Query_searchProducts(ctx context.Contex
 				return ec.fieldContext_ProductConnection_edges(ctx, field)
 			case "pageInfo":
 				return ec.fieldContext_ProductConnection_pageInfo(ctx, field)
+			case "totalCount":
+				return ec.fieldContext_ProductConnection_totalCount(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type ProductConnection", field.Name)
 		},
@@ -7182,6 +7334,11 @@ func (ec *executionContext) _ProductConnection(ctx context.Context, sel ast.Sele
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "totalCount":
+			out.Values[i] = ec._ProductConnection_totalCount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -8211,6 +8368,16 @@ func (ec *executionContext) marshalNMoney2ᚖgithubᚗcomᚋGeawnᚋMs_Eᚑcomme
 	return ec._Money(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNOrderDirection2githubᚗcomᚋGeawnᚋMs_Eᚑcommerce_BEᚋproductᚑserviceᚋinternalᚋgraphqlᚋmodelᚐOrderDirection(ctx context.Context, v any) (model.OrderDirection, error) {
+	var res model.OrderDirection
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNOrderDirection2githubᚗcomᚋGeawnᚋMs_Eᚑcommerce_BEᚋproductᚑserviceᚋinternalᚋgraphqlᚋmodelᚐOrderDirection(ctx context.Context, sel ast.SelectionSet, v model.OrderDirection) graphql.Marshaler {
+	return v
+}
+
 func (ec *executionContext) marshalNPageInfo2ᚖgithubᚗcomᚋGeawnᚋMs_Eᚑcommerce_BEᚋproductᚑserviceᚋinternalᚋmodelsᚐPageInfo(ctx context.Context, sel ast.SelectionSet, v *models.PageInfo) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -8305,6 +8472,16 @@ func (ec *executionContext) marshalNProductEdge2ᚖgithubᚗcomᚋGeawnᚋMs_E�
 		return graphql.Null
 	}
 	return ec._ProductEdge(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNProductOrderField2githubᚗcomᚋGeawnᚋMs_Eᚑcommerce_BEᚋproductᚑserviceᚋinternalᚋgraphqlᚋmodelᚐProductOrderField(ctx context.Context, v any) (model.ProductOrderField, error) {
+	var res model.ProductOrderField
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNProductOrderField2githubᚗcomᚋGeawnᚋMs_Eᚑcommerce_BEᚋproductᚑserviceᚋinternalᚋgraphqlᚋmodelᚐProductOrderField(ctx context.Context, sel ast.SelectionSet, v model.ProductOrderField) graphql.Marshaler {
+	return v
 }
 
 func (ec *executionContext) marshalNProductPricing2githubᚗcomᚋGeawnᚋMs_Eᚑcommerce_BEᚋproductᚑserviceᚋinternalᚋmodelsᚐProductPricing(ctx context.Context, sel ast.SelectionSet, v models.ProductPricing) graphql.Marshaler {

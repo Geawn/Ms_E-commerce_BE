@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	"fmt"
+	"strconv"
 
 	"github.com/Geawn/Ms_E-commerce_BE/product-service/internal/models"
 	pb "github.com/Geawn/Ms_E-commerce_BE/product-service/proto"
@@ -28,7 +30,22 @@ func (s *GRPCProductService) GetProduct(ctx context.Context, req *pb.GetProductR
 }
 
 func (s *GRPCProductService) ListProducts(ctx context.Context, req *pb.ListProductsRequest) (*pb.ListProductsResponse, error) {
-	products, err := s.ProductService.ListProducts(ctx, int(req.Limit), int(req.Offset))
+	offset := 0
+	if req.After != "" {
+		// Convert cursor to offset
+		cursorID, err := strconv.ParseUint(req.After, 10, 32)
+		if err != nil {
+			return nil, err
+		}
+		// Get the position of the cursor in the list
+		position, err := s.ProductService.GetProductPosition(ctx, uint(cursorID))
+		if err != nil {
+			return nil, err
+		}
+		offset = position + 1
+	}
+
+	products, err := s.ProductService.ListProducts(ctx, int(req.Limit), offset)
 	if err != nil {
 		return nil, err
 	}
@@ -38,14 +55,43 @@ func (s *GRPCProductService) ListProducts(ctx context.Context, req *pb.ListProdu
 		protoProducts[i] = convertToProtoProduct(product)
 	}
 
+	// Get total count for pagination
+	totalCount, err := s.ProductService.GetTotalProducts(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	hasNextPage := offset+len(products) < totalCount
+
 	return &pb.ListProductsResponse{
 		Products: protoProducts,
-		Total:    int32(len(products)),
+		Total:    int32(totalCount),
+		PageInfo: &pb.PageInfo{
+			HasNextPage:     hasNextPage,
+			HasPreviousPage: offset > 0,
+			StartCursor:     fmt.Sprintf("%d", products[0].ID),
+			EndCursor:       fmt.Sprintf("%d", products[len(products)-1].ID),
+		},
 	}, nil
 }
 
 func (s *GRPCProductService) SearchProducts(ctx context.Context, req *pb.SearchProductsRequest) (*pb.ListProductsResponse, error) {
-	products, err := s.ProductService.SearchProducts(ctx, req.Query, int(req.Limit), int(req.Offset))
+	offset := 0
+	if req.After != "" {
+		// Convert cursor to offset
+		cursorID, err := strconv.ParseUint(req.After, 10, 32)
+		if err != nil {
+			return nil, err
+		}
+		// Get the position of the cursor in the list
+		position, err := s.ProductService.GetProductPosition(ctx, uint(cursorID))
+		if err != nil {
+			return nil, err
+		}
+		offset = position + 1
+	}
+
+	products, err := s.ProductService.SearchProducts(ctx, req.Query, int(req.Limit), offset, req.SortBy.String(), req.SortDirection.String())
 	if err != nil {
 		return nil, err
 	}
@@ -55,9 +101,23 @@ func (s *GRPCProductService) SearchProducts(ctx context.Context, req *pb.SearchP
 		protoProducts[i] = convertToProtoProduct(product)
 	}
 
+	// Get total count for pagination
+	totalCount, err := s.ProductService.GetTotalSearchResults(ctx, req.Query)
+	if err != nil {
+		return nil, err
+	}
+
+	hasNextPage := offset+len(products) < totalCount
+
 	return &pb.ListProductsResponse{
 		Products: protoProducts,
-		Total:    int32(len(products)),
+		Total:    int32(totalCount),
+		PageInfo: &pb.PageInfo{
+			HasNextPage:     hasNextPage,
+			HasPreviousPage: offset > 0,
+			StartCursor:     fmt.Sprintf("%d", products[0].ID),
+			EndCursor:       fmt.Sprintf("%d", products[len(products)-1].ID),
+		},
 	}, nil
 }
 

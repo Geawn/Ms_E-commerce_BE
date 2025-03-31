@@ -13,7 +13,8 @@ type ProductRepository interface {
 	List(ctx context.Context, limit, offset int) ([]*models.Product, error)
 	ListByCategory(ctx context.Context, categoryID uint, limit, offset int) ([]*models.Product, error)
 	ListByCollection(ctx context.Context, collectionID uint, limit, offset int) ([]*models.Product, error)
-	Search(ctx context.Context, query string, limit, offset int) ([]*models.Product, error)
+	Search(ctx context.Context, query string, limit, offset int, sortBy string, sortDirection string) ([]*models.Product, error)
+	GetTotalSearchResults(ctx context.Context, query string) (int, error)
 	Create(ctx context.Context, product *models.Product) error
 	Update(ctx context.Context, product *models.Product) error
 	Delete(ctx context.Context, id uint) error
@@ -28,6 +29,8 @@ type ProductRepository interface {
 	DeleteReview(ctx context.Context, id uint) error
 	GetProductReviews(ctx context.Context, productID uint) ([]*models.Review, error)
 	GetCategoryBySlug(ctx context.Context, slug string) (*models.Category, error)
+	GetPosition(ctx context.Context, productID uint) (int, error)
+	GetTotal(ctx context.Context) (int, error)
 }
 
 type productRepository struct {
@@ -145,17 +148,34 @@ func (r *productRepository) ListByCollection(ctx context.Context, collectionID u
 	return result, nil
 }
 
-func (r *productRepository) Search(ctx context.Context, query string, limit, offset int) ([]*models.Product, error) {
+func (r *productRepository) Search(ctx context.Context, query string, limit, offset int, sortBy string, sortDirection string) ([]*models.Product, error) {
 	var products []models.Product
-	err := r.db.WithContext(ctx).
+	db := r.db.WithContext(ctx).
 		Preload("Category").
 		Preload("Variants").
 		Preload("Attributes").
 		Preload("Collections").
 		Preload("Reviews").
 		Preload("Thumbnail").
-		Where("name ILIKE ? OR description ILIKE ?", "%"+query+"%", "%"+query+"%").
-		Limit(limit).
+		Where("name ILIKE ? OR description ILIKE ?", "%"+query+"%", "%"+query+"%")
+
+	// Apply sorting
+	switch sortBy {
+	case "NAME":
+		db = db.Order("name " + sortDirection)
+	case "PRICE":
+		// Assuming price is stored in variants
+		db = db.Joins("LEFT JOIN product_variants ON products.id = product_variants.product_id").
+			Order("product_variants.price " + sortDirection)
+	case "CREATED_AT":
+		db = db.Order("created_at " + sortDirection)
+	case "UPDATED_AT":
+		db = db.Order("updated_at " + sortDirection)
+	default:
+		db = db.Order("created_at DESC")
+	}
+
+	err := db.Limit(limit).
 		Offset(offset).
 		Find(&products).Error
 	if err != nil {
@@ -167,6 +187,18 @@ func (r *productRepository) Search(ctx context.Context, query string, limit, off
 		result[i] = &products[i]
 	}
 	return result, nil
+}
+
+func (r *productRepository) GetTotalSearchResults(ctx context.Context, query string) (int, error) {
+	var count int64
+	err := r.db.WithContext(ctx).
+		Model(&models.Product{}).
+		Where("name ILIKE ? OR description ILIKE ?", "%"+query+"%", "%"+query+"%").
+		Count(&count).Error
+	if err != nil {
+		return 0, err
+	}
+	return int(count), nil
 }
 
 func (r *productRepository) Create(ctx context.Context, product *models.Product) error {
@@ -257,4 +289,27 @@ func (r *productRepository) GetCategoryBySlug(ctx context.Context, slug string) 
 		return nil, err
 	}
 	return &category, nil
+}
+
+func (r *productRepository) GetPosition(ctx context.Context, productID uint) (int, error) {
+	var count int64
+	err := r.db.WithContext(ctx).
+		Model(&models.Product{}).
+		Where("id <= ?", productID).
+		Count(&count).Error
+	if err != nil {
+		return 0, err
+	}
+	return int(count) - 1, nil
+}
+
+func (r *productRepository) GetTotal(ctx context.Context) (int, error) {
+	var count int64
+	err := r.db.WithContext(ctx).
+		Model(&models.Product{}).
+		Count(&count).Error
+	if err != nil {
+		return 0, err
+	}
+	return int(count), nil
 }
