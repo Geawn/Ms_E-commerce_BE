@@ -4,6 +4,8 @@ go 1.23.0
 
 toolchain go1.24.1
 
+replace github.com/Geawn/Ms_E-commerce_BE/user-service => ./
+
 require (
 	github.com/99designs/gqlgen v0.17.70
 	github.com/gin-gonic/gin v1.9.1
@@ -11,8 +13,6 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
 	github.com/joho/godotenv v1.5.1
-	github.com/prometheus/client_golang v1.19.0
-	github.com/streadway/amqp v1.1.0
 	github.com/vektah/gqlparser/v2 v2.5.23
 	google.golang.org/grpc v1.71.0
 	google.golang.org/protobuf v1.36.6
@@ -35,9 +35,8 @@ require (
 	github.com/go-playground/validator/v10 v10.17.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
 	github.com/goccy/go-json v0.10.2 // indirect
-	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/gorilla/websocket v1.5.1 // indirect
+	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20231201235250-de7065d80cb9 // indirect
@@ -53,6 +52,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pelletier/go-toml/v2 v2.1.1 // indirect
+	github.com/prometheus/client_golang v1.19.0 // indirect
 	github.com/prometheus/client_model v0.5.0 // indirect
 	github.com/prometheus/common v0.48.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect

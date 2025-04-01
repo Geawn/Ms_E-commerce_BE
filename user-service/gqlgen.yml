@@ -2,12 +2,12 @@ schema:
   - internal/graphql/*.graphql
 
 exec:
-  filename: internal/gql/generated.go
-  package: gql
+  filename: internal/graphql/generated.go
+  package: graphql
 
 model:
-  filename: internal/gql/model/models_gen.go
-  package: model
+  filename: internal/graphql/model/models_gen.go
+  package: graphql
 
 resolver:
   layout: follow-schema

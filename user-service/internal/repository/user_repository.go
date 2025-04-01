@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/Geawn/Ms_E-commerce_BE/user-service/internal/models"
+	"gorm.io/gorm"
 )
 
 type UserRepository interface {
@@ -11,25 +12,17 @@ type UserRepository interface {
 }
 
 type userRepository struct {
-	// Add your database client here
-	// db *sql.DB
+	db *gorm.DB
 }
 
-func NewUserRepository() UserRepository {
-	return &userRepository{}
+func NewUserRepository(db *gorm.DB) UserRepository {
+	return &userRepository{db: db}
 }
 
 func (r *userRepository) GetUserByID(ctx context.Context, id string) (*models.User, error) {
-	// Implement your database query here
-	// This is just a mock implementation
-	return &models.User{
-		ID:        id,
-		Email:     "user@example.com",
-		FirstName: "John",
-		LastName:  "Doe",
-		Avatar: &models.Avatar{
-			URL: "https://example.com/avatar.jpg",
-			Alt: "User avatar",
-		},
-	}, nil
+	var user models.User
+	if err := r.db.First(&user, id).Error; err != nil {
+		return nil, err
+	}
+	return &user, nil
 }

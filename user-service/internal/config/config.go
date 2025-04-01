@@ -1,8 +1,12 @@
 package config
 
 import (
+	"fmt"
+	"log"
 	"os"
 	"strconv"
+
+	"github.com/joho/godotenv"
 )
 
 type Config struct {
@@ -24,6 +28,7 @@ type DBConfig struct {
 	User     string
 	Password string
 	DBName   string
+	SSLMode  string
 }
 
 type RedisConfig struct {
@@ -39,29 +44,36 @@ type RabbitConfig struct {
 }
 
 func LoadConfig() (*Config, error) {
+	// Load .env file
+	if err := godotenv.Load(); err != nil {
+		log.Printf("Warning: .env file not found, using default values")
+	} else {
+		log.Printf("Successfully loaded .env file")
+	}
+
 	httpPort, err := strconv.Atoi(getEnvOrDefault("HTTP_PORT", "8080"))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("invalid HTTP_PORT: %v", err)
 	}
 
 	grpcPort, err := strconv.Atoi(getEnvOrDefault("GRPC_PORT", "50051"))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("invalid GRPC_PORT: %v", err)
 	}
 
 	dbPort, err := strconv.Atoi(getEnvOrDefault("DB_PORT", "5432"))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("invalid DB_PORT: %v", err)
 	}
 
 	redisPort, err := strconv.Atoi(getEnvOrDefault("REDIS_PORT", "6379"))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("invalid REDIS_PORT: %v", err)
 	}
 
 	rabbitPort, err := strconv.Atoi(getEnvOrDefault("RABBITMQ_PORT", "5672"))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("invalid RABBITMQ_PORT: %v", err)
 	}
 
 	return &Config{
@@ -76,6 +88,7 @@ func LoadConfig() (*Config, error) {
 			User:     getEnvOrDefault("DB_USER", "postgres"),
 			Password: getEnvOrDefault("DB_PASSWORD", "postgres"),
 			DBName:   getEnvOrDefault("DB_NAME", "Ecommerce"),
+			SSLMode:  getEnvOrDefault("DB_SSL_MODE", "disable"),
 		},
 		RedisConfig: RedisConfig{
 			Host: getEnvOrDefault("REDIS_HOST", "127.0.0.1"),
@@ -92,7 +105,9 @@ func LoadConfig() (*Config, error) {
 
 func getEnvOrDefault(key, defaultValue string) string {
 	if value := os.Getenv(key); value != "" {
+		log.Printf("Config: %s=%s (from environment)", key, value)
 		return value
 	}
+	log.Printf("Config: %s=%s (using default)", key, defaultValue)
 	return defaultValue
 }

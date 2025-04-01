@@ -10,17 +10,20 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/gin-gonic/gin"
-	"github.com/go-redis/redis/v8"
-	"github.com/grpc-ecosystem/go-grpc-middleware"
-	"github.com/grpc-ecosystem/go-grpc-prometheus"
+	"github.com/99designs/gqlgen/graphql/handler"
+	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/Geawn/Ms_E-commerce_BE/user-service/internal/config"
 	"github.com/Geawn/Ms_E-commerce_BE/user-service/internal/database"
 	"github.com/Geawn/Ms_E-commerce_BE/user-service/internal/database/migration"
+	"github.com/Geawn/Ms_E-commerce_BE/user-service/internal/graphql"
 	grpcserver "github.com/Geawn/Ms_E-commerce_BE/user-service/internal/grpc"
 	"github.com/Geawn/Ms_E-commerce_BE/user-service/internal/repository"
 	"github.com/Geawn/Ms_E-commerce_BE/user-service/internal/service"
 	pb "github.com/Geawn/Ms_E-commerce_BE/user-service/proto"
+	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v8"
+	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
@@ -99,6 +102,25 @@ func main() {
 			"status": "ok",
 		})
 	})
+
+	// Setup GraphQL server
+	resolver := graphql.NewResolver(userService)
+	srv := handler.NewDefaultServer(graphql.NewExecutableSchema(graphql.Config{
+		Resolvers: resolver,
+	}))
+
+	// Add GraphQL endpoints
+	router.POST("/query", func(c *gin.Context) {
+		srv.ServeHTTP(c.Writer, c.Request)
+	})
+
+	// Add GraphQL playground in development
+	if cfg.ServerConfig.Env == "development" {
+		playgroundHandler := playground.Handler("GraphQL", "/query")
+		router.GET("/", func(c *gin.Context) {
+			playgroundHandler.ServeHTTP(c.Writer, c.Request)
+		})
+	}
 
 	// Lắng nghe trên port
 	grpcLis, err := net.Listen("tcp", fmt.Sprintf(":%d", cfg.ServerConfig.GRPCPort))

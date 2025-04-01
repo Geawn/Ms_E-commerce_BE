@@ -1,29 +1,20 @@
 package graphql
 
 import (
-	"context"
-
-	"github.com/Geawn/Ms_E-commerce_BE/user-service/internal/models"
 	"github.com/Geawn/Ms_E-commerce_BE/user-service/internal/service"
 )
 
+// This file will not be regenerated automatically.
+//
+// It serves as dependency injection for your app, add any dependencies you require here.
+
 type Resolver struct {
-	userService service.UserService
+	UserService service.UserService
 }
 
+// NewResolver creates a new resolver with the given user service
 func NewResolver(userService service.UserService) *Resolver {
 	return &Resolver{
-		userService: userService,
+		UserService: userService,
 	}
-}
-
-func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
-
-type queryResolver struct{ *Resolver }
-
-func (r *queryResolver) Me(ctx context.Context) (*models.User, error) {
-	// In a real implementation, you would get the user ID from the context
-	// This is typically set by your authentication middleware
-	userID := "current-user-id" // Replace with actual user ID from context
-	return r.userService.GetCurrentUser(ctx, userID)
 }
