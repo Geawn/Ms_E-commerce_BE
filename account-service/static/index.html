@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Service Test Interface</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .response {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 4px;
+            background-color: #f8f9fa;
+            white-space: pre-wrap;
+        }
+        .error {
+            color: red;
+        }
+        .success {
+            color: green;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Account Service Test Interface</h1>
+        
+        <div id="auth-forms">
+            <h2>Register</h2>
+            <form id="register-form">
+                <div class="form-group">
+                    <label for="reg-username">Username:</label>
+                    <input type="text" id="reg-username" required>
+                </div>
+                <div class="form-group">
+                    <label for="reg-email">Email:</label>
+                    <input type="email" id="reg-email" required>
+                </div>
+                <div class="form-group">
+                    <label for="reg-firstname">First Name:</label>
+                    <input type="text" id="reg-firstname" required>
+                </div>
+                <div class="form-group">
+                    <label for="reg-lastname">Last Name:</label>
+                    <input type="text" id="reg-lastname" required>
+                </div>
+                <div class="form-group">
+                    <label for="reg-password">Password:</label>
+                    <input type="password" id="reg-password" required>
+                </div>
+                <button type="submit">Register</button>
+            </form>
+
+            <h2>Login</h2>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="login-username">Username:</label>
+                    <input type="text" id="login-username" required>
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Password:</label>
+                    <input type="password" id="login-password" required>
+                </div>
+                <button type="submit">Login</button>
+            </form>
+        </div>
+
+        <div id="authenticated-section" style="display: none;">
+            <h2>Change Password</h2>
+            <form id="change-password-form">
+                <div class="form-group">
+                    <label for="old-password">Old Password:</label>
+                    <input type="password" id="old-password" required>
+                </div>
+                <div class="form-group">
+                    <label for="new-password">New Password:</label>
+                    <input type="password" id="new-password" required>
+                </div>
+                <button type="submit">Change Password</button>
+            </form>
+            <button id="logout-btn" style="margin-top: 20px;">Logout</button>
+        </div>
+
+        <div class="response" id="response"></div>
+    </div>
+
+    <script>
+        let token = localStorage.getItem('token');
+        const API_URL = 'http://localhost:8080';
+
+        // Show/hide appropriate sections based on authentication status
+        function updateAuthUI() {
+            document.getElementById('auth-forms').style.display = token ? 'none' : 'block';
+            document.getElementById('authenticated-section').style.display = token ? 'block' : 'none';
+        }
+        updateAuthUI();
+
+        // Helper function for API calls
+        async function apiCall(endpoint, method, data) {
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}${endpoint}`, {
+                    method,
+                    headers,
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.error || 'An error occurred');
+                return result;
+            } catch (error) {
+                throw error;
+            }
+        }
+
+        // Register form
+        document.getElementById('register-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                const result = await apiCall('/register', 'POST', {
+                    username: document.getElementById('reg-username').value,
+                    email: document.getElementById('reg-email').value,
+                    first_name: document.getElementById('reg-firstname').value,
+                    last_name: document.getElementById('reg-lastname').value,
+                    password: document.getElementById('reg-password').value
+                });
+                token = result.token;
+                localStorage.setItem('token', token);
+                updateAuthUI();
+                document.getElementById('response').innerHTML = '<span class="success">Registration successful!</span>';
+            } catch (error) {
+                document.getElementById('response').innerHTML = `<span class="error">${error.message}</span>`;
+            }
+        });
+
+        // Login form
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                const result = await apiCall('/login', 'POST', {
+                    username: document.getElementById('login-username').value,
+                    password: document.getElementById('login-password').value
+                });
+                token = result.token;
+                localStorage.setItem('token', token);
+                updateAuthUI();
+                document.getElementById('response').innerHTML = '<span class="success">Login successful!</span>';
+            } catch (error) {
+                document.getElementById('response').innerHTML = `<span class="error">${error.message}</span>`;
+            }
+        });
+
+        // Change password form
+        document.getElementById('change-password-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                await apiCall('/change-password', 'POST', {
+                    old_password: document.getElementById('old-password').value,
+                    new_password: document.getElementById('new-password').value
+                });
+                document.getElementById('response').innerHTML = '<span class="success">Password changed successfully!</span>';
+            } catch (error) {
+                document.getElementById('response').innerHTML = `<span class="error">${error.message}</span>`;
+            }
+        });
+
+        // Logout button
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            token = null;
+            localStorage.removeItem('token');
+            updateAuthUI();
+            document.getElementById('response').innerHTML = '<span class="success">Logged out successfully!</span>';
+        });
+    </script>
+</body>
+</html> 
