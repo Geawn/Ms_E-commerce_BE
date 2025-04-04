@@ -9,8 +9,6 @@ type User struct {
 	Email     string  `gorm:"uniqueIndex;not null" json:"email"`
 	FirstName string  `json:"firstName"`
 	LastName  string  `json:"lastName"`
-	Password  string  `json:"-"`
-	Role      string  `gorm:"default:'user'" json:"role"`
 	Profile   Profile `gorm:"foreignKey:UserID" json:"profile"`
 }
 

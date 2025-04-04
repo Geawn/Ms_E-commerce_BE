@@ -7,19 +7,32 @@ package graphql
 import (
 	"context"
 	"fmt"
+	"log"
 	"strconv"
 
+	"github.com/Geawn/Ms_E-commerce_BE/user-service/internal/middleware"
 	"github.com/Geawn/Ms_E-commerce_BE/user-service/internal/models"
 )
 
 // Me is the resolver for the me field.
 func (r *queryResolver) Me(ctx context.Context) (*models.User, error) {
-	// TODO: Get user ID from context after implementing authentication
-	// For now, return the first user as an example
-	user, err := r.UserService.GetCurrentUser(ctx, "1") // Using ID 1 as example
+	log.Println("Resolver: Me called")
+	
+	userID, ok := ctx.Value(middleware.UserIDKey).(string)
+	if !ok {
+		log.Println("Resolver: User ID not found in context")
+		return nil, fmt.Errorf("unauthorized: user ID not found in context")
+	}
+	
+	log.Printf("Resolver: User ID from context: %s", userID)
+
+	user, err := r.UserService.GetCurrentUser(ctx, userID)
 	if err != nil {
+		log.Printf("Resolver: Error getting user: %v", err)
 		return nil, fmt.Errorf("failed to get user: %v", err)
 	}
+	
+	log.Printf("Resolver: User found: %+v", user)
 	return user, nil
 }
 

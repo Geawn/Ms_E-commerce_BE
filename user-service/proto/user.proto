@@ -5,6 +5,7 @@ option go_package = "github.com/Geawn/Ms_E-commerce_BE/user-service/proto";
 
 service UserService {
   rpc GetCurrentUser (GetCurrentUserRequest) returns (GetCurrentUserResponse) {}
+  rpc CreateUser (CreateUserRequest) returns (CreateUserResponse) {}
 }
 
 message GetCurrentUserRequest {
@@ -13,6 +14,18 @@ message GetCurrentUserRequest {
 
 message GetCurrentUserResponse {
   User user = 1;
+}
+
+message CreateUserRequest {
+  string email = 1;
+  string first_name = 2;
+  string last_name = 3;
+}
+
+message CreateUserResponse {
+  uint64 user_id = 1;
+  bool success = 2;
+  string error = 3;
 }
 
 message User {

@@ -28,8 +28,6 @@ func RunMigrations(db *gorm.DB) error {
 				Email:     "admin@example.com",
 				FirstName: "Admin",
 				LastName:  "User",
-				Password:  "$2a$10$yourhashedpassword", // Replace with actual hashed password
-				Role:      "admin",
 				Profile: models.Profile{
 					PhoneNumber: "+1234567890",
 					Addresses: []models.Address{
@@ -52,8 +50,6 @@ func RunMigrations(db *gorm.DB) error {
 				Email:     "user@example.com",
 				FirstName: "Regular",
 				LastName:  "User",
-				Password:  "$2a$10$yourhashedpassword", // Replace with actual hashed password
-				Role:      "user",
 				Profile: models.Profile{
 					PhoneNumber: "+1987654321",
 					Addresses: []models.Address{

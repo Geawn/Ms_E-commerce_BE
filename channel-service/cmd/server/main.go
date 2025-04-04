@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"log"
-	"net/http"
 	"os"
 
 	"github.com/99designs/gqlgen/graphql/handler"
@@ -11,11 +10,34 @@ import (
 	"github.com/Geawn/Ms_E-commerce_BE/channel-service/internal/database"
 	"github.com/Geawn/Ms_E-commerce_BE/channel-service/internal/graphql"
 	"github.com/Geawn/Ms_E-commerce_BE/channel-service/internal/repository"
+	"github.com/gin-gonic/gin"
 )
 
 const defaultPort = "8080"
 
+// Defining the Graphql handler
+func graphqlHandler(resolver *graphql.Resolver) gin.HandlerFunc {
+	h := handler.NewDefaultServer(graphql.NewExecutableSchema(graphql.Config{Resolvers: resolver}))
+
+	return func(c *gin.Context) {
+		h.ServeHTTP(c.Writer, c.Request)
+	}
+}
+
+// Defining the Playground handler
+func playgroundHandler() gin.HandlerFunc {
+	h := playground.Handler("GraphQL playground", "/query")
+
+	return func(c *gin.Context) {
+		h.ServeHTTP(c.Writer, c.Request)
+	}
+}
+
 func main() {
+	// Setting up Gin
+	gin.SetMode(gin.DebugMode)
+	r := gin.Default()
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = defaultPort
@@ -45,11 +67,12 @@ func main() {
 		log.Fatalf("Failed to create resolver: %v", err)
 	}
 
-	srv := handler.NewDefaultServer(graphql.NewExecutableSchema(graphql.Config{Resolvers: resolver}))
+	// Setting up routes
+	r.GET("/", playgroundHandler())
+	r.POST("/query", graphqlHandler(resolver))
 
-	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
-	http.Handle("/query", srv)
-
-	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
-	log.Fatal(http.ListenAndServe(":"+port, nil))
+	log.Printf("Starting HTTP server on :%s", port)
+	if err := r.Run(":" + port); err != nil {
+		log.Fatalf("Failed to run server: %v", err)
+	}
 }

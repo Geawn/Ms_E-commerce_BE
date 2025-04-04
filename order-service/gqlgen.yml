@@ -1,0 +1,41 @@
+schema:
+  - internal/graphql/schema.graphql
+
+exec:
+  filename: internal/graphql/generated.go
+  package: graphql
+
+model:
+  filename: internal/graphql/models_gen.go
+  package: graphql
+
+resolver:
+  layout: follow-schema
+  dir: internal/graphql
+  package: graphql
+
+models:
+  User:
+    model: github.com/Geawn/Ms_E-commerce_BE/order-service/internal/model.User
+  Order:
+    model: github.com/Geawn/Ms_E-commerce_BE/order-service/internal/model.Order
+  OrderLine:
+    model: github.com/Geawn/Ms_E-commerce_BE/order-service/internal/model.OrderLine
+  OrderConnection:
+    model: github.com/Geawn/Ms_E-commerce_BE/order-service/internal/model.OrderConnection
+  ProductVariant:
+    model: github.com/Geawn/Ms_E-commerce_BE/order-service/internal/model.ProductVariant
+  Product:
+    model: github.com/Geawn/Ms_E-commerce_BE/order-service/internal/model.Product
+  Category:
+    model: github.com/Geawn/Ms_E-commerce_BE/order-service/internal/model.Category
+  Image:
+    model: github.com/Geawn/Ms_E-commerce_BE/order-service/internal/model.Image
+  Money:
+    model: github.com/Geawn/Ms_E-commerce_BE/order-service/internal/model.Money
+  Pricing:
+    model: github.com/Geawn/Ms_E-commerce_BE/order-service/internal/model.Pricing
+  DateTime:
+    model: github.com/Geawn/Ms_E-commerce_BE/order-service/internal/model.DateTime
+  PaymentStatusEnum:
+    model: github.com/Geawn/Ms_E-commerce_BE/order-service/internal/model.PaymentStatusEnum 

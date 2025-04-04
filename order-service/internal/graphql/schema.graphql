@@ -1,0 +1,77 @@
+type Query {
+  me: User
+}
+
+type User {
+  id: ID!
+  email: String!
+  firstName: String!
+  lastName: String!
+  avatar: Image
+  orders(first: Int): OrderConnection!
+}
+
+type OrderConnection {
+  edges: [OrderEdge!]!
+}
+
+type OrderEdge {
+  node: Order!
+}
+
+type Order {
+  id: ID!
+  number: String!
+  created: DateTime!
+  total: Money!
+  lines: [OrderLine!]!
+  paymentStatus: PaymentStatusEnum!
+}
+
+type OrderLine {
+  variant: ProductVariant!
+  quantity: Int!
+}
+
+type ProductVariant {
+  id: ID!
+  name: String!
+  product: Product!
+  pricing: Pricing!
+}
+
+type Product {
+  id: ID!
+  name: String!
+  description: String!
+  slug: String!
+  thumbnail: Image
+  category: Category
+}
+
+type Category {
+  id: ID!
+  name: String!
+}
+
+type Image {
+  url: String!
+  alt: String
+}
+
+type Money {
+  amount: Float!
+  currency: String!
+}
+
+type Pricing {
+  price: Money!
+}
+
+enum PaymentStatusEnum {
+  PENDING
+  PAID
+  FAILED
+}
+
+scalar DateTime 

@@ -8,14 +8,17 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/Geawn/Ms_E-commerce_BE/user-service/internal/config"
 	"github.com/Geawn/Ms_E-commerce_BE/user-service/internal/database"
-	"github.com/Geawn/Ms_E-commerce_BE/user-service/internal/database/migration"
+
+	//"github.com/Geawn/Ms_E-commerce_BE/user-service/internal/database/migration"
 	"github.com/Geawn/Ms_E-commerce_BE/user-service/internal/graphql"
+	"github.com/Geawn/Ms_E-commerce_BE/user-service/internal/middleware"
 	grpcserver "github.com/Geawn/Ms_E-commerce_BE/user-service/internal/grpc"
 	"github.com/Geawn/Ms_E-commerce_BE/user-service/internal/repository"
 	"github.com/Geawn/Ms_E-commerce_BE/user-service/internal/service"
@@ -26,6 +29,7 @@ import (
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 func main() {
@@ -49,9 +53,9 @@ func main() {
 	defer sqlDB.Close()
 
 	// Run migrations
-	if err := migration.RunMigrations(db); err != nil {
-		log.Fatalf("Failed to run migrations: %v", err)
-	}
+	//	if err := migration.RunMigrations(db); err != nil {
+	//		log.Fatalf("Failed to run migrations: %v", err)
+	//	}
 
 	// Initialize Redis
 	rdb := redis.NewClient(&redis.Options{
@@ -109,8 +113,76 @@ func main() {
 		Resolvers: resolver,
 	}))
 
-	// Add GraphQL endpoints
+	// Add GraphQL endpoints with auth middleware
 	router.POST("/query", func(c *gin.Context) {
+		log.Println("Received GraphQL request")
+		
+		// Get Authorization header
+		authHeader := c.GetHeader("Authorization")
+		log.Printf("Authorization header: %s", authHeader)
+		
+		// Check Bearer token format
+		parts := strings.Split(authHeader, " ")
+		if len(parts) != 2 || parts[0] != "Bearer" {
+			log.Println("Invalid authorization header format")
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid authorization header format"})
+			return
+		}
+
+		tokenString := parts[1]
+		log.Printf("Token: %s", tokenString)
+
+		// Get secret key from environment variable
+		secretKey := os.Getenv("JWT_SECRET_KEY")
+		if secretKey == "" {
+			secretKey = "your-secret-key" // Fallback for development
+		}
+		log.Printf("Using secret key: %s", secretKey)
+
+		// Parse and validate token
+		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+			// Validate the signing method
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+			}
+			return []byte(secretKey), nil
+		})
+
+		if err != nil {
+			log.Printf("Error parsing token: %v", err)
+			c.JSON(http.StatusUnauthorized, gin.H{"error": fmt.Sprintf("Invalid token: %v", err)})
+			return
+		}
+
+		if !token.Valid {
+			log.Println("Token is not valid")
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Token is not valid"})
+			return
+		}
+
+		// Extract claims
+		claims, ok := token.Claims.(jwt.MapClaims)
+		if !ok {
+			log.Println("Invalid token claims")
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token claims"})
+			return
+		}
+
+		// Get user ID from claims
+		userID, ok := claims["user_id"].(string)
+		if !ok {
+			log.Println("User ID not found in token")
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "User ID not found in token"})
+			return
+		}
+		
+		log.Printf("User ID from token: %s", userID)
+
+		// Create a new context with user ID
+		ctx := context.WithValue(c.Request.Context(), middleware.UserIDKey, userID)
+		c.Request = c.Request.WithContext(ctx)
+		
+		log.Println("Passing request to GraphQL handler")
 		srv.ServeHTTP(c.Writer, c.Request)
 	})
 

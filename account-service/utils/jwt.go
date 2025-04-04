@@ -30,7 +30,7 @@ func init() {
 }
 
 type Claims struct {
-	UserID uint   `json:"user_id"`
+	UserID string `json:"user_id"`
 	Role   string `json:"role"`
 	jwt.StandardClaims
 }
@@ -38,7 +38,7 @@ type Claims struct {
 func GenerateToken(user models.AccountUser, deviceInfo, ipAddress string) (string, error) {
 	expirationTime := time.Now().Add(24 * time.Hour)
 	claims := &Claims{
-		UserID: user.ID,
+		UserID: user.UserID,
 		Role:   user.Role,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: expirationTime.Unix(),
@@ -53,7 +53,7 @@ func GenerateToken(user models.AccountUser, deviceInfo, ipAddress string) (strin
 
 	// Save token to database
 	userToken := models.UserToken{
-		UserID:     user.ID,
+		UserID:     user.UserID,
 		Token:      tokenString,
 		TokenType:  "access",
 		ExpiresAt:  expirationTime,
@@ -100,7 +100,7 @@ func InvalidateToken(tokenStr string) error {
 	return database.DB.Where("token = ?", tokenStr).Delete(&models.UserToken{}).Error
 }
 
-func InvalidateAllUserTokens(userID uint) error {
+func InvalidateAllUserTokens(userID string) error {
 	return database.DB.Where("user_id = ?", userID).Delete(&models.UserToken{}).Error
 }
 

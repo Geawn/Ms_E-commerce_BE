@@ -3,6 +3,7 @@ package handlers
 import (
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/Geawn/Ms_E-commerce_BE/account-service/database"
 	"github.com/Geawn/Ms_E-commerce_BE/account-service/models"
@@ -55,6 +56,13 @@ func Register(c *gin.Context) {
 		return
 	}
 
+	// Start a transaction
+	tx := database.DB.Begin()
+	if tx.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to start transaction"})
+		return
+	}
+
 	// Create new account user
 	user := models.AccountUser{
 		UserID:    strconv.FormatUint(userID, 10),
@@ -64,28 +72,91 @@ func Register(c *gin.Context) {
 		LastName:  req.LastName,
 		Password:  string(hashedPassword),
 		Role:      "user",
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 
-	if err := database.DB.Create(&user).Error; err != nil {
+	// Create user first
+	if err := tx.Create(&user).Error; err != nil {
+		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error creating user"})
 		return
 	}
 
-	token, err := utils.GenerateToken(user, "access", "24h")
+	// Commit user creation first
+	if err := tx.Commit().Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to commit user creation"})
+		return
+	}
+
+	// Start new transaction for token creation
+	tx = database.DB.Begin()
+	if tx.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to start token transaction"})
+		return
+	}
+
+	// Verify user was created
+	var createdUser models.AccountUser
+	if err := tx.Where("user_id = ?", user.UserID).First(&createdUser).Error; err != nil {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error verifying user creation"})
+		return
+	}
+
+	// Generate token
+	token, err := utils.GenerateToken(createdUser, "web", c.ClientIP())
 	if err != nil {
+		tx.Rollback()
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error generating token"})
+		return
+	}
+
+	var userToken models.UserToken
+	// Check if token already exists
+	var existingToken models.UserToken
+	if err := tx.Where("token = ?", token).First(&existingToken).Error; err == nil {
+		// Token exists, use it
+		userToken = existingToken
+	} else if err != gorm.ErrRecordNotFound {
+		tx.Rollback()
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error checking existing token"})
+		return
+	} else {
+		// Token doesn't exist, create new one
+		userToken = models.UserToken{
+			UserID:     createdUser.UserID,
+			Token:      token,
+			TokenType:  "access",
+			ExpiresAt:  time.Now().Add(24 * time.Hour),
+			DeviceInfo: "web",
+			IPAddress:  c.ClientIP(),
+			CreatedAt:  time.Now(),
+			UpdatedAt:  time.Now(),
+		}
+
+		if err := tx.Create(&userToken).Error; err != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error creating user token"})
+			return
+		}
+	}
+
+	// Commit token creation
+	if err := tx.Commit().Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to commit token creation"})
 		return
 	}
 
 	response := models.AuthResponse{
 		Token: token,
 		User: models.AuthUserResponse{
-			ID:        user.ID,
-			Username:  user.Username,
-			Email:     user.Email,
-			FirstName: user.FirstName,
-			LastName:  user.LastName,
-			Role:      user.Role,
+			ID:        createdUser.ID,
+			Username:  createdUser.Username,
+			Email:     createdUser.Email,
+			FirstName: createdUser.FirstName,
+			LastName:  createdUser.LastName,
+			Role:      createdUser.Role,
 		},
 	}
 
@@ -125,16 +196,13 @@ func Login(c *gin.Context) {
 	user.Password = ""
 	c.JSON(http.StatusOK, models.AuthResponse{
 		Token: token,
-		User: struct {
-			ID       uint   `json:"id"`
-			Username string `json:"username"`
-			Email    string `json:"email"`
-			Role     string `json:"role"`
-		}{
-			ID:       user.ID,
-			Username: user.Username,
-			Email:    user.Email,
-			Role:     user.Role,
+		User: models.AuthUserResponse{
+			ID:        user.ID,
+			Username:  user.Username,
+			Email:     user.Email,
+			FirstName: user.FirstName,
+			LastName:  user.LastName,
+			Role:      user.Role,
 		},
 	})
 }
@@ -156,7 +224,7 @@ func ChangePassword(c *gin.Context) {
 
 	// Get user from database
 	var user models.AccountUser
-	if err := database.DB.First(&user, userClaims.UserID).Error; err != nil {
+	if err := database.DB.Where("user_id = ?", userClaims.UserID).First(&user).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
 		return
 	}

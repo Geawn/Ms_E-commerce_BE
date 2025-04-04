@@ -1,0 +1,79 @@
+syntax = "proto3";
+
+package order;
+
+option go_package = "github.com/Geawn/Ms_E-commerce_BE/order-service/proto";
+
+service OrderService {
+  rpc CreateOrder (CreateOrderRequest) returns (CreateOrderResponse) {}
+  rpc GetOrder (GetOrderRequest) returns (GetOrderResponse) {}
+  rpc ListOrders (ListOrdersRequest) returns (ListOrdersResponse) {}
+  rpc UpdateOrderStatus (UpdateOrderStatusRequest) returns (UpdateOrderStatusResponse) {}
+}
+
+message CreateOrderRequest {
+  string userId = 1;
+  repeated OrderLineInput lines = 2;
+  string shippingAddress = 3;
+  string billingAddress = 4;
+}
+
+message OrderLineInput {
+  string productId = 1;
+  string variantId = 2;
+  int32 quantity = 3;
+}
+
+message CreateOrderResponse {
+  Order order = 1;
+}
+
+message GetOrderRequest {
+  string id = 1;
+}
+
+message GetOrderResponse {
+  Order order = 1;
+}
+
+message ListOrdersRequest {
+  string userId = 1;
+  int32 page = 2;
+  int32 perPage = 3;
+}
+
+message ListOrdersResponse {
+  repeated Order orders = 1;
+  int32 total = 2;
+}
+
+message UpdateOrderStatusRequest {
+  string id = 1;
+  string status = 2;
+}
+
+message UpdateOrderStatusResponse {
+  Order order = 1;
+}
+
+message Order {
+  string id = 1;
+  string userId = 2;
+  string status = 3;
+  string totalAmount = 4;
+  string currency = 5;
+  string shippingAddress = 6;
+  string billingAddress = 7;
+  repeated OrderLine lines = 8;
+  string createdAt = 9;
+  string updatedAt = 10;
+}
+
+message OrderLine {
+  string id = 1;
+  string productId = 2;
+  string variantId = 3;
+  int32 quantity = 4;
+  string price = 5;
+  string currency = 6;
+} 

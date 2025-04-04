@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package user;
+
+option go_package = "github.com/Geawn/Ms_E-commerce_BE/order-service/proto";
+
+service UserService {
+  rpc GetCurrentUser (GetCurrentUserRequest) returns (GetCurrentUserResponse) {}
+}
+
+message GetCurrentUserRequest {
+  string token = 1;
+}
+
+message GetCurrentUserResponse {
+  string id = 1;
+  string email = 2;
+  string firstName = 3;
+  string lastName = 4;
+  Avatar avatar = 5;
+}
+
+message Avatar {
+  string url = 1;
+  string alt = 2;
+} 

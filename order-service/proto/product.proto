@@ -1,0 +1,63 @@
+syntax = "proto3";
+
+package product;
+
+option go_package = "github.com/Geawn/Ms_E-commerce_BE/order-service/proto";
+
+service ProductService {
+  rpc GetProductDetails (GetProductDetailsRequest) returns (GetProductDetailsResponse) {}
+}
+
+message GetProductDetailsRequest {
+  string slug = 1;
+  string channel = 2;
+}
+
+message GetProductDetailsResponse {
+  string id = 1;
+  string name = 2;
+  string slug = 3;
+  string description = 4;
+  string seoTitle = 5;
+  string seoDescription = 6;
+  Thumbnail thumbnail = 7;
+  Category category = 8;
+  repeated Variant variants = 9;
+  Pricing pricing = 10;
+}
+
+message Thumbnail {
+  string url = 1;
+  string alt = 2;
+}
+
+message Category {
+  string id = 1;
+  string name = 2;
+}
+
+message Variant {
+  string id = 1;
+  string name = 2;
+  int32 quantityAvailable = 3;
+  Pricing pricing = 4;
+}
+
+message Pricing {
+  Price price = 1;
+  PriceRange priceRange = 2;
+}
+
+message Price {
+  Money gross = 1;
+}
+
+message PriceRange {
+  Money start = 1;
+  Money stop = 2;
+}
+
+message Money {
+  string amount = 1;
+  string currency = 2;
+} 
