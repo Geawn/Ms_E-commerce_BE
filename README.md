@@ -15,7 +15,7 @@
 
 ## Services & Features
 
-- [x] User Service: Responsible for handling user-related business logic and interactions.
+- [x] User Service: Responsible for handling user-related business logic and database interactions.
 - [x] Product Service: Manages product listings, categories, details, and searching.
 - [x] Content Service: Manages webpage information.
 - [x] Channel Service: Manages channel listing, information.
