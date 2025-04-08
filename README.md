@@ -36,25 +36,9 @@
   + gRPC is used for internal communication between microservices, ensuring high performance and type-safe message exchange.
 - **Authentication & Authorization**: `JWT` is used for authentication.
 
-## Pre-requisites
+## Future Plans/Goals
 
-- Docker & Docker Compose should be installed.
+- Finished all services
+- Connected with Saleor storefront
+- Get product deployed
 
-  ```bash
-  docker --version
-  docker compose version
-  ```
-
-- Create and update all `.env` files with the required values for each service.
-
-## How to run the project using docker (Recommended)
-
-```bash
-docker compose up --build
-```
-
-Here `--build` is used to build the image again if there are any changes in the code.
-
-## Github Actions (CI/CD) Requirements
-
-- Add `DOCKER_USERNAME` & `DOCKER_PASSWORD` to github secrets to push the image to docker hub.
