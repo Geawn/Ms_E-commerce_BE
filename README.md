@@ -6,6 +6,7 @@
 - Golang
 - Nest.js
 - gRPC
+- Redis
 - GraphQL
 - PostgresQL
 - JWT
@@ -29,6 +30,7 @@
 - **Microservices Architecture**: Each service is a separate codebase, with its own database.
 - **Containerization**: `Docker` is used to containerize each service, making it easy to deploy and scale the services.
 - **Database**: `PostgresQL` is used as the database for all services, providing a flexible schema and scalability.
+- **Cache**: `Redis` is used for caching
 - **Communication**:
 
   + GraphQL is used for communication between client and server, providing a flexible and efficient API for frontend.
