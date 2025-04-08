@@ -31,9 +31,9 @@
 - **Database**: `PostgresQL` is used as the database for all services, providing a flexible schema and scalability.
 - **Communication**:
 
-      GraphQL is used for communication between client and server, providing a flexible and efficient API for frontend.
+  + GraphQL is used for communication between client and server, providing a flexible and efficient API for frontend.
 
-      gRPC is used for internal communication between microservices, ensuring high performance and type-safe message exchange.
+  + gRPC is used for internal communication between microservices, ensuring high performance and type-safe message exchange.
 - **Authentication & Authorization**: `JWT` is used for authentication.
 
 ## Pre-requisites
