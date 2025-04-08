@@ -39,6 +39,6 @@
 ## Future Plans/Goals
 
 - Finished all services
-- Connected with Saleor storefront
+- Connected to Saleor storefront
 - Get product deployed
 
